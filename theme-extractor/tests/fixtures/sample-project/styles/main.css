@@ -1,0 +1,23 @@
+:root {
+  --primary: #1a73e8;
+  --secondary: var(--primary);
+  --bg-light: rgb(245, 245, 245);
+  --text-dark: #222222;
+  --border: var(--missing, #cccccc);
+}
+
+.header {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.card {
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  border-color: var(--border);
+}
+
+.footer {
+  background: #333333;
+  color: rgba(255, 255, 255, 1);
+}

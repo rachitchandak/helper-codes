@@ -1,0 +1,22 @@
+$nav-bg: #1e293b;
+$nav-text: hsl(210, 40%, 96%);
+
+.nav {
+    background: $nav-bg;
+    color: $nav-text;
+
+    .nav-item {
+        color: #94a3b8;
+        border-color: #334155;
+
+        &:hover {
+            color: #f8fafc;
+            background: #334155;
+        }
+    }
+}
+
+.sidebar {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}

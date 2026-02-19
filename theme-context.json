@@ -1,0 +1,158 @@
+{
+  "resolvedCssVariables": {
+    "--bg-cream": "#faf9f7",
+    "--bg-white": "#ffffff",
+    "--primary-dark": "#1a1a1a",
+    "--primary-gold": "#c9a962",
+    "--primary-light": "#f8f6f2",
+    "--text-dark": "#2d2d2d",
+    "--text-light": "#ffffff",
+    "--text-low-contrast": "#cccccc"
+  },
+  "hardcodedColors": [
+    "#1a1a1a",
+    "#22c55e",
+    "#2d2d2d",
+    "#666666",
+    "#999999",
+    "#c9a962",
+    "#ef4444",
+    "#faf9f7",
+    "#ffffff",
+    "transparent"
+  ],
+  "classMap": {
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\App.css": {
+      ".welcome-text": {
+        "color": "#ffffff"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\ContactForm.css": {
+      ".contact-desc": {
+        "color": "#666666"
+      },
+      ".contact-form input:focus,\r\n.contact-form textarea:focus": {
+        "borderColor": "#c9a962"
+      },
+      ".contact-info .section-label": {
+        "color": "#c9a962"
+      },
+      ".contact-label": {
+        "color": "#c9a962"
+      },
+      ".contact-section": {
+        "background": "#faf9f7"
+      },
+      ".contact-value": {
+        "color": "#2d2d2d"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\Footer.css": {
+      ".footer-heading": {
+        "color": "#1a1a1a"
+      },
+      ".footer-logo": {
+        "color": "#1a1a1a"
+      },
+      ".link-list a:hover": {
+        "color": "#c9a962"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\Header.css": {
+      ".header": {
+        "background": "#ffffff"
+      },
+      ".logo-text": {
+        "color": "#1a1a1a"
+      },
+      ".nav-item": {
+        "color": "#2d2d2d"
+      },
+      ".nav-item:hover": {
+        "color": "#c9a962"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\Hero.css": {
+      ".hero-buttons .btn-outline:hover": {
+        "color": "#1a1a1a"
+      },
+      ".hero-subtitle": {
+        "color": "#ffffff"
+      },
+      ".hero-tagline": {
+        "color": "#c9a962"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\PriceList.css": {
+      ".price-table td:not(:first-child)": {
+        "color": "#c9a962"
+      },
+      ".price-table tr:not(.table-header-row):hover": {
+        "background": "#faf9f7"
+      },
+      ".table-header-row": {
+        "background": "#1a1a1a"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\components\\RoomAvailability.css": {
+      ".price-period": {
+        "color": "#999999"
+      },
+      ".room-link": {
+        "color": "#2d2d2d"
+      },
+      ".room-link:hover": {
+        "color": "#c9a962"
+      },
+      ".room-price": {
+        "color": "#c9a962"
+      },
+      ".rooms-section": {
+        "background": "#faf9f7"
+      },
+      ".section-desc": {
+        "color": "#666666"
+      },
+      ".section-label": {
+        "color": "#c9a962"
+      }
+    },
+    "C:\\Users\\2862775\\Desktop\\demo-site\\src\\index.css": {
+      ".btn-outline": {
+        "background": "transparent",
+        "color": "#c9a962"
+      },
+      ".btn-outline:hover": {
+        "background": "#c9a962",
+        "color": "#ffffff"
+      },
+      ".btn-primary": {
+        "color": "#ffffff"
+      },
+      ".low-contrast-text": {
+        "color": "#cccccc"
+      },
+      ".status-available": {
+        "background": "#22c55e"
+      },
+      ".status-booked": {
+        "background": "#ef4444"
+      },
+      "body": {
+        "color": "#2d2d2d",
+        "background": "#ffffff"
+      },
+      "h1, h2, h3, h4, h5, h6": {
+        "color": "#2d2d2d"
+      },
+      "input, textarea": {
+        "background": "#ffffff"
+      },
+      "input:focus, textarea:focus": {
+        "borderColor": "#c9a962"
+      }
+    }
+  },
+  "tailwindColors": {},
+  "tailwindUtilities": {}
+}

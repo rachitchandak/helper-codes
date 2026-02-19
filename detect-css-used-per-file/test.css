@@ -1,0 +1,21 @@
+/* Sample CSS file */
+.header-container {
+    background-color: var(--dark-primary);
+    color: var(--text-white);
+}
+
+.button-primary:hover {
+    opacity: 0.8;
+}
+
+div[class="complex-selector"] {
+    border: 1px solid red;
+}
+
+.card, .card-body {
+    padding: 1rem;
+}
+
+:root {
+    --main-bg: #fff;
+}

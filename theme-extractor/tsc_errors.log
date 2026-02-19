@@ -1,0 +1,9 @@
+src/style-intelligence/CssParser.ts(92,9): error TS2322: Type 'Document_ | undefined' is not assignable to type 'ContainerWithChildren | undefined'.
+  Type 'Document_' is not assignable to type 'ContainerWithChildren | undefined'.
+    Type 'Document_' is not assignable to type '({ nodes: ChildNode[]; } & AtRule_) | ({ nodes: ChildNode[]; } & Root_) | ({ nodes: ChildNode[]; } & Rule_)'.
+      Type 'Document_' is not assignable to type '{ nodes: ChildNode[]; } & Root_'.
+        Type 'Document_' is not assignable to type '{ nodes: ChildNode[]; }'.
+          Types of property 'nodes' are incompatible.
+            Type 'Root_[]' is not assignable to type 'ChildNode[]'.
+              Type 'Root_' is not assignable to type 'ChildNode'.
+                Type 'Root_' is missing the following properties from type 'Rule_': selector, selectors

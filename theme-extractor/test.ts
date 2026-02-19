@@ -1,0 +1,1 @@
+// npx ts - node src / cli.ts "C:\Users\rachi\OneDrive\Desktop\demo-site"

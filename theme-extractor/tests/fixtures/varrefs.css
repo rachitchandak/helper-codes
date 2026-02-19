@@ -1,0 +1,4 @@
+.btn {
+  color: var(--primary);
+  background: var(--bg, #fff);
+}
