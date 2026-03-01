@@ -39,16 +39,14 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const layer1_ast_1 = require("./layer1-ast");
 const HeuristicEngine_1 = require("./layer2-semantics/HeuristicEngine");
-const RenderValidationEngine_1 = require("./layer3-render/RenderValidationEngine");
 const ScMappingEngine_1 = require("./layer4-mapping/ScMappingEngine");
 const ReportingEngine_1 = require("./layer5-reporting/ReportingEngine");
 class WcagSurfaceAnalyzer {
     astEngine = new layer1_ast_1.StaticAstEngine();
     heuristicEngine = new HeuristicEngine_1.SemanticHeuristicEngine();
     mappingEngine = new ScMappingEngine_1.ScMappingEngine();
-    renderEngine = new RenderValidationEngine_1.RenderValidationEngine();
     reportingEngine = new ReportingEngine_1.ReportingEngine();
-    async analyzeFile(filePath) {
+    analyzeFile(filePath) {
         const absolutePath = path.resolve(filePath);
         if (!fs.existsSync(absolutePath)) {
             throw new Error(`File not found: ${absolutePath}`);
@@ -58,17 +56,13 @@ class WcagSurfaceAnalyzer {
         const astResult = this.astEngine.parseFile(absolutePath, content);
         // Layer 2: Semantic Heuristic Engine
         const classification = this.heuristicEngine.classify(astResult.file, astResult.framework, astResult.ast);
-        // Layer 4: SC Mapping Engine (Layer 3 deferred for output)
+        // Layer 4: SC Mapping Engine
         const mappedData = this.mappingEngine.mapSurfaces(classification);
         // Layer 5: Reporting Engine
         const report = this.reportingEngine.generateReport(mappedData);
-        // Layer 3: Render / Runtime Validation check (only executing if needed for demo purposes)
-        const renderResults = await this.renderEngine.validate(absolutePath, mappedData);
-        // Inject runtime results into details
-        report.details.push({ runtime_validation_completed: renderResults });
         return report;
     }
-    async analyzeProject(dirPath, outputDir) {
+    analyzeProject(dirPath, outputDir) {
         const absolutePath = path.resolve(dirPath);
         if (!fs.existsSync(absolutePath)) {
             throw new Error(`Directory not found: ${absolutePath}`);
@@ -83,7 +77,7 @@ class WcagSurfaceAnalyzer {
         console.log(`Starting analysis of ${supportedFiles.length} files...`);
         for (const file of supportedFiles) {
             try {
-                const report = await this.analyzeFile(file);
+                const report = this.analyzeFile(file);
                 // Output individual file report
                 const relativePath = path.relative(absolutePath, file);
                 const safeName = relativePath.replace(/[\/\\]/g, '_') + '.json';
@@ -145,16 +139,10 @@ if (require.main === module) {
     const analyzer = new WcagSurfaceAnalyzer();
     const absoluteTarget = path.resolve(target);
     if (fs.statSync(absoluteTarget).isDirectory()) {
-        analyzer.analyzeProject(absoluteTarget, outputDir)
-            .catch(err => console.error('Project analysis failed:', err));
+        analyzer.analyzeProject(absoluteTarget, outputDir);
     }
     else {
-        analyzer.analyzeFile(absoluteTarget)
-            .then(report => {
-            console.log(JSON.stringify(report, null, 2));
-        })
-            .catch(err => {
-            console.error('Analysis failed:', err);
-        });
+        const report = analyzer.analyzeFile(absoluteTarget);
+        console.log(JSON.stringify(report, null, 2));
     }
 }

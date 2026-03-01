@@ -1,7 +1,22 @@
 {
   "NAVIGATION_SURFACE": {
     "files": [
-      "index.html"
+      "public\\index.html",
+      "src\\Components\\Authentication\\LoginSign\\LoginSignUp.jsx",
+      "src\\Components\\Authentication\\Reset\\ResetPass.jsx",
+      "src\\Components\\Blog\\BlogList\\BlogList.jsx",
+      "src\\Components\\Error\\Error.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Header\\Navbar.jsx",
+      "src\\Components\\Home\\Banner\\Banner.jsx",
+      "src\\Components\\Home\\Collection\\CollectionBox.jsx",
+      "src\\Components\\Home\\Deal\\DealTimer.jsx",
+      "src\\Components\\Home\\Hero\\HeroSection.jsx",
+      "src\\Components\\Home\\Limited\\LimitedEdition.jsx",
+      "src\\Components\\Home\\Trendy\\Trendy.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx"
     ],
     "wcag_guidelines": [
       "1.3.1",
@@ -12,18 +27,68 @@
       "2.4.6"
     ]
   },
+  "STRUCTURE_SURFACE": {
+    "files": [
+      "src\\App.js",
+      "src\\Components\\About\\AboutPage.jsx",
+      "src\\Components\\Authentication\\Reset\\ResetPass.jsx",
+      "src\\Components\\Blog\\BlogDetails\\BlogDetails.jsx",
+      "src\\Components\\Blog\\BlogList\\BlogList.jsx",
+      "src\\Components\\Contact\\ContactPage.jsx",
+      "src\\Components\\Error\\Error.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Home\\Banner\\Banner.jsx",
+      "src\\Components\\Home\\Collection\\CollectionBox.jsx",
+      "src\\Components\\Home\\Deal\\DealTimer.jsx",
+      "src\\Components\\Home\\Hero\\HeroSection.jsx",
+      "src\\Components\\Home\\Instagram\\Instagram.jsx",
+      "src\\Components\\Home\\Limited\\LimitedEdition.jsx",
+      "src\\Components\\Home\\Services\\Services.jsx",
+      "src\\Components\\Home\\Trendy\\Trendy.jsx",
+      "src\\Components\\PopupBanner\\Popup.jsx",
+      "src\\Components\\Product\\AdditonInfo\\AdditionalInfo.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Product\\RelatedProducts\\RelatedProducts.jsx",
+      "src\\Components\\Shop\\Filters\\Filter.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx",
+      "src\\Components\\Terms\\TermsandConditions.jsx"
+    ],
+    "wcag_guidelines": [
+      "1.3.1",
+      "2.4.1",
+      "2.4.6",
+      "2.4.10"
+    ]
+  },
   "PRESENTATION_SURFACE": {
     "files": [
-      "report\\report_watcher.html",
-      "report\\wcag-viewer.html",
-      "report_viewer\\index.html",
-      "src\\App.jsx",
-      "src\\components\\ContactForm.jsx",
-      "src\\components\\Footer.jsx",
-      "src\\components\\Header.jsx",
-      "src\\components\\Hero.jsx",
-      "src\\components\\PriceList.jsx",
-      "src\\components\\RoomAvailability.jsx"
+      "src\\Components\\About\\AboutPage.jsx",
+      "src\\Components\\Authentication\\LoginSign\\LoginSignUp.jsx",
+      "src\\Components\\Authentication\\Reset\\ResetPass.jsx",
+      "src\\Components\\Blog\\BlogDetails\\BlogDetails.jsx",
+      "src\\Components\\Blog\\BlogList\\BlogList.jsx",
+      "src\\Components\\Contact\\ContactPage.jsx",
+      "src\\Components\\Error\\Error.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Header\\Navbar.jsx",
+      "src\\Components\\Home\\Banner\\Banner.jsx",
+      "src\\Components\\Home\\Collection\\CollectionBox.jsx",
+      "src\\Components\\Home\\Deal\\DealTimer.jsx",
+      "src\\Components\\Home\\Hero\\HeroSection.jsx",
+      "src\\Components\\Home\\Instagram\\Instagram.jsx",
+      "src\\Components\\Home\\Limited\\LimitedEdition.jsx",
+      "src\\Components\\Home\\Services\\Services.jsx",
+      "src\\Components\\Home\\Trendy\\Trendy.jsx",
+      "src\\Components\\PopupBanner\\Popup.jsx",
+      "src\\Components\\Product\\AdditonInfo\\AdditionalInfo.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Product\\RelatedProducts\\RelatedProducts.jsx",
+      "src\\Components\\ScrollButton\\ScrollToTop.jsx",
+      "src\\Components\\Shop\\Filters\\Filter.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx",
+      "src\\Components\\Terms\\TermsandConditions.jsx"
     ],
     "wcag_guidelines": [
       "1.4.3",
@@ -36,33 +101,55 @@
       "2.5.8"
     ]
   },
-  "STRUCTURE_SURFACE": {
+  "IMAGE_SURFACE": {
     "files": [
-      "report\\report_watcher.html",
-      "report\\wcag-viewer.html",
-      "report_viewer\\index.html",
-      "src\\App.jsx",
-      "src\\components\\ContactForm.jsx",
-      "src\\components\\Hero.jsx",
-      "src\\components\\PriceList.jsx",
-      "src\\components\\RoomAvailability.jsx"
+      "src\\Components\\About\\AboutPage.jsx",
+      "src\\Components\\Blog\\BlogDetails\\BlogDetails.jsx",
+      "src\\Components\\Blog\\BlogList\\BlogList.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Header\\Navbar.jsx",
+      "src\\Components\\Home\\Hero\\HeroSection.jsx",
+      "src\\Components\\Home\\Instagram\\Instagram.jsx",
+      "src\\Components\\Home\\Limited\\LimitedEdition.jsx",
+      "src\\Components\\Home\\Trendy\\Trendy.jsx",
+      "src\\Components\\PopupBanner\\Popup.jsx",
+      "src\\Components\\Product\\AdditonInfo\\AdditionalInfo.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Product\\RelatedProducts\\RelatedProducts.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx"
     ],
     "wcag_guidelines": [
+      "1.1.1",
       "1.3.1",
-      "2.4.1",
-      "2.4.6",
-      "2.4.10"
+      "1.4.3",
+      "1.4.5",
+      "2.4.4"
     ]
   },
   "INTERACTIVE_CONTROL_SURFACE": {
     "files": [
-      "report\\report_watcher.html",
-      "report\\wcag-viewer.html",
-      "report_viewer\\index.html",
-      "src\\components\\ContactForm.jsx",
-      "src\\components\\Footer.jsx",
-      "src\\components\\Header.jsx",
-      "src\\components\\PriceList.jsx"
+      "src\\Components\\Authentication\\LoginSign\\LoginSignUp.jsx",
+      "src\\Components\\Authentication\\Reset\\ResetPass.jsx",
+      "src\\Components\\Blog\\BlogDetails\\BlogDetails.jsx",
+      "src\\Components\\Blog\\BlogList\\BlogList.jsx",
+      "src\\Components\\Contact\\ContactPage.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Header\\Navbar.jsx",
+      "src\\Components\\Home\\Banner\\Banner.jsx",
+      "src\\Components\\Home\\Collection\\CollectionBox.jsx",
+      "src\\Components\\Home\\Deal\\DealTimer.jsx",
+      "src\\Components\\Home\\Hero\\HeroSection.jsx",
+      "src\\Components\\Home\\Limited\\LimitedEdition.jsx",
+      "src\\Components\\Home\\Trendy\\Trendy.jsx",
+      "src\\Components\\PopupBanner\\Popup.jsx",
+      "src\\Components\\Product\\AdditonInfo\\AdditionalInfo.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Product\\RelatedProducts\\RelatedProducts.jsx",
+      "src\\Components\\ScrollButton\\ScrollToTop.jsx",
+      "src\\Components\\Shop\\Filters\\Filter.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx"
     ],
     "wcag_guidelines": [
       "2.1.1",
@@ -80,10 +167,17 @@
   },
   "FORM_INPUT_SURFACE": {
     "files": [
-      "report\\report_watcher.html",
-      "report\\wcag-viewer.html",
-      "report_viewer\\index.html",
-      "src\\components\\ContactForm.jsx"
+      "src\\Components\\Authentication\\LoginSign\\LoginSignUp.jsx",
+      "src\\Components\\Authentication\\Reset\\ResetPass.jsx",
+      "src\\Components\\Contact\\ContactPage.jsx",
+      "src\\Components\\Footer\\Footer.jsx",
+      "src\\Components\\Header\\Navbar.jsx",
+      "src\\Components\\PopupBanner\\Popup.jsx",
+      "src\\Components\\Product\\AdditonInfo\\AdditionalInfo.jsx",
+      "src\\Components\\Product\\ProductMain\\Product.jsx",
+      "src\\Components\\Shop\\Filters\\Filter.jsx",
+      "src\\Components\\Shop\\ShopDetails\\ShopDetails.jsx",
+      "src\\Components\\ShoppingCart\\ShoppingCart.jsx"
     ],
     "wcag_guidelines": [
       "1.3.1",
@@ -93,22 +187,6 @@
       "3.3.7",
       "3.3.8",
       "4.1.2"
-    ]
-  },
-  "IMAGE_SURFACE": {
-    "files": [
-      "report\\report_watcher.html",
-      "report\\wcag-viewer.html",
-      "src\\components\\Footer.jsx",
-      "src\\components\\Hero.jsx",
-      "src\\components\\RoomAvailability.jsx"
-    ],
-    "wcag_guidelines": [
-      "1.1.1",
-      "1.3.1",
-      "1.4.3",
-      "1.4.5",
-      "2.4.4"
     ]
   }
 }

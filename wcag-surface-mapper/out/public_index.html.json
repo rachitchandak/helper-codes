@@ -1,5 +1,5 @@
 {
-  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\demo-site\\index.html",
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\public\\index.html",
   "detected_surfaces": [
     "NAVIGATION_SURFACE"
   ],
@@ -11,7 +11,6 @@
     "2.4.5",
     "2.4.6"
   ],
-  "requires_runtime_validation": [],
   "confidence_score": 0.9,
   "details": [
     {
@@ -24,6 +23,52 @@
         },
         "end": {
           "line": 5,
+          "column": 56
+        }
+      },
+      "reasoning": "Navigation landmark or component: link | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.2",
+        "2.4.4",
+        "2.4.5",
+        "2.4.6"
+      ]
+    },
+    {
+      "category": "NAVIGATION_SURFACE",
+      "element": "link",
+      "loc": {
+        "start": {
+          "line": 13,
+          "column": 5
+        },
+        "end": {
+          "line": 13,
+          "column": 68
+        }
+      },
+      "reasoning": "Navigation landmark or component: link | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.2",
+        "2.4.4",
+        "2.4.5",
+        "2.4.6"
+      ]
+    },
+    {
+      "category": "NAVIGATION_SURFACE",
+      "element": "link",
+      "loc": {
+        "start": {
+          "line": 18,
+          "column": 5
+        },
+        "end": {
+          "line": 18,
           "column": 62
         }
       },
@@ -36,80 +81,6 @@
         "2.4.5",
         "2.4.6"
       ]
-    },
-    {
-      "category": "NAVIGATION_SURFACE",
-      "element": "link",
-      "loc": {
-        "start": {
-          "line": 7,
-          "column": 5
-        },
-        "end": {
-          "line": 7,
-          "column": 64
-        }
-      },
-      "reasoning": "Navigation landmark or component: link | role: ",
-      "sc": [
-        "1.3.1",
-        "2.4.1",
-        "2.4.2",
-        "2.4.4",
-        "2.4.5",
-        "2.4.6"
-      ]
-    },
-    {
-      "category": "NAVIGATION_SURFACE",
-      "element": "link",
-      "loc": {
-        "start": {
-          "line": 8,
-          "column": 5
-        },
-        "end": {
-          "line": 8,
-          "column": 73
-        }
-      },
-      "reasoning": "Navigation landmark or component: link | role: ",
-      "sc": [
-        "1.3.1",
-        "2.4.1",
-        "2.4.2",
-        "2.4.4",
-        "2.4.5",
-        "2.4.6"
-      ]
-    },
-    {
-      "category": "NAVIGATION_SURFACE",
-      "element": "link",
-      "loc": {
-        "start": {
-          "line": 9,
-          "column": 5
-        },
-        "end": {
-          "line": 9,
-          "column": 120
-        }
-      },
-      "reasoning": "Navigation landmark or component: link | role: ",
-      "sc": [
-        "1.3.1",
-        "2.4.1",
-        "2.4.2",
-        "2.4.4",
-        "2.4.5",
-        "2.4.6"
-      ]
-    },
-    {
-      "runtime_validation_completed": {
-        "msg": "No runtime validation required for detected SCs."
-      }
     }
   ]
 }

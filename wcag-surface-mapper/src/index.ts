@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { StaticAstEngine } from './layer1-ast';
 import { SemanticHeuristicEngine } from './layer2-semantics/HeuristicEngine';
-import { RenderValidationEngine } from './layer3-render/RenderValidationEngine';
 import { ScMappingEngine } from './layer4-mapping/ScMappingEngine';
 import { ReportingEngine, FinalReportSchema } from './layer5-reporting/ReportingEngine';
 
@@ -12,10 +11,9 @@ export class WcagSurfaceAnalyzer {
     private astEngine = new StaticAstEngine();
     private heuristicEngine = new SemanticHeuristicEngine();
     private mappingEngine = new ScMappingEngine();
-    private renderEngine = new RenderValidationEngine();
     private reportingEngine = new ReportingEngine();
 
-    public async analyzeFile(filePath: string): Promise<FinalReportSchema> {
+    public analyzeFile(filePath: string): FinalReportSchema {
         const absolutePath = path.resolve(filePath);
         if (!fs.existsSync(absolutePath)) {
             throw new Error(`File not found: ${absolutePath}`);
@@ -29,21 +27,16 @@ export class WcagSurfaceAnalyzer {
         // Layer 2: Semantic Heuristic Engine
         const classification = this.heuristicEngine.classify(astResult.file, astResult.framework, astResult.ast);
 
-        // Layer 4: SC Mapping Engine (Layer 3 deferred for output)
+        // Layer 4: SC Mapping Engine
         const mappedData = this.mappingEngine.mapSurfaces(classification);
 
         // Layer 5: Reporting Engine
         const report = this.reportingEngine.generateReport(mappedData);
 
-        // Layer 3: Render / Runtime Validation check (only executing if needed for demo purposes)
-        const renderResults = await this.renderEngine.validate(absolutePath, mappedData);
-
-        // Inject runtime results into details
-        report.details.push({ runtime_validation_completed: renderResults });
-
         return report;
     }
-    public async analyzeProject(dirPath: string, outputDir: string): Promise<void> {
+
+    public analyzeProject(dirPath: string, outputDir: string): void {
         const absolutePath = path.resolve(dirPath);
         if (!fs.existsSync(absolutePath)) {
             throw new Error(`Directory not found: ${absolutePath}`);
@@ -63,7 +56,7 @@ export class WcagSurfaceAnalyzer {
 
         for (const file of supportedFiles) {
             try {
-                const report = await this.analyzeFile(file);
+                const report = this.analyzeFile(file);
 
                 // Output individual file report
                 const relativePath = path.relative(absolutePath, file);
@@ -135,15 +128,9 @@ if (require.main === module) {
     const absoluteTarget = path.resolve(target);
 
     if (fs.statSync(absoluteTarget).isDirectory()) {
-        analyzer.analyzeProject(absoluteTarget, outputDir)
-            .catch(err => console.error('Project analysis failed:', err));
+        analyzer.analyzeProject(absoluteTarget, outputDir);
     } else {
-        analyzer.analyzeFile(absoluteTarget)
-            .then(report => {
-                console.log(JSON.stringify(report, null, 2));
-            })
-            .catch(err => {
-                console.error('Analysis failed:', err);
-            });
+        const report = analyzer.analyzeFile(absoluteTarget);
+        console.log(JSON.stringify(report, null, 2));
     }
 }

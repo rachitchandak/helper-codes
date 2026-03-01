@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCAG Surface Mapper — Result Watcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2236;
+            --bg-card-hover: #1f2a42;
+            --bg-elevated: #243050;
+            --border: #2a3454;
+            --border-active: #6366f1;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #818cf8;
+            --accent-bright: #a5b4fc;
+            --accent-dim: #4f46e5;
+            --success: #34d399;
+            --success-dim: #065f46;
+            --warning: #fbbf24;
+            --warning-dim: #78350f;
+            --danger: #f87171;
+            --danger-dim: #7f1d1d;
+            --surface-image: #f472b6;
+            --surface-interactive: #60a5fa;
+            --surface-form: #a78bfa;
+            --surface-media: #fb923c;
+            --surface-navigation: #34d399;
+            --surface-structure: #fbbf24;
+            --surface-dynamic: #f87171;
+            --surface-presentation: #94a3b8;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ── HEADER ── */
+        .app-header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #0f172a 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+        .app-header .logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+            border-radius: var(--radius-sm);
+            display: grid; place-items: center;
+            font-weight: 800; font-size: 18px; color: #fff;
+            flex-shrink: 0;
+        }
+        .app-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+        .app-header .subtitle { font-size: 13px; color: var(--text-muted); margin-left: -8px; }
+
+        /* ── LAYOUT ── */
+        .app-layout { display: flex; height: calc(100vh - 81px); }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 340px; min-width: 340px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .sidebar-header h2 { font-size: 14px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .import-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        .import-zone:hover, .import-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(99,102,241,0.05);
+        }
+        .import-zone input { display: none; }
+        .import-zone .icon { font-size: 28px; margin-bottom: 6px; }
+        .import-zone .label { font-size: 13px; color: var(--text-secondary); }
+        .import-zone .label strong { color: var(--accent-bright); }
+
+        .search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+        }
+        .search-box input {
+            flex: 1; background: none; border: none; color: var(--text-primary);
+            font-size: 13px; outline: none; font-family: inherit;
+        }
+        .search-box .icon { color: var(--text-muted); font-size: 14px; }
+
+        .file-list {
+            flex: 1; overflow-y: auto; padding: 8px 12px;
+        }
+        .file-list::-webkit-scrollbar { width: 6px; }
+        .file-list::-webkit-scrollbar-track { background: transparent; }
+        .file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .file-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 2px;
+            border: 1px solid transparent;
+        }
+        .file-item:hover { background: var(--bg-card); }
+        .file-item.active { background: var(--bg-card); border-color: var(--accent-dim); }
+        .file-item .name {
+            font-size: 13px; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .file-item .meta {
+            display: flex; gap: 8px; align-items: center;
+            margin-top: 4px; font-size: 11px; color: var(--text-muted);
+        }
+        .file-item .meta .badge {
+            padding: 1px 6px; border-radius: 4px;
+            font-size: 10px; font-weight: 600;
+        }
+        .file-item .meta .surfaces-count { background: rgba(99,102,241,0.15); color: var(--accent-bright); }
+        .file-item .meta .sc-count { background: rgba(52,211,153,0.15); color: var(--success); }
+        .file-item .meta .confidence {
+            margin-left: auto; font-weight: 600;
+        }
+        .file-counter {
+            padding: 10px 20px; border-top: 1px solid var(--border);
+            font-size: 12px; color: var(--text-muted); text-align: center;
+        }
+
+        /* ── MAIN PANEL ── */
+        .main-panel {
+            flex: 1; overflow-y: auto; padding: 28px 36px;
+        }
+        .main-panel::-webkit-scrollbar { width: 8px; }
+        .main-panel::-webkit-scrollbar-track { background: transparent; }
+        .main-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; gap: 16px; color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 64px; opacity: 0.3; }
+        .empty-state h2 { font-size: 20px; font-weight: 600; color: var(--text-secondary); }
+        .empty-state p { font-size: 14px; max-width: 380px; text-align: center; line-height: 1.7; }
+
+        /* ── REPORT HEADER ── */
+        .report-header { margin-bottom: 28px; }
+        .report-header .filename {
+            font-size: 22px; font-weight: 700; letter-spacing: -0.4px;
+            word-break: break-all;
+        }
+        .report-header .filepath {
+            font-size: 12px; color: var(--text-muted); margin-top: 4px;
+            word-break: break-all;
+        }
+
+        /* ── STATS ROW ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .stat-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-card .value { font-size: 28px; font-weight: 800; margin-top: 4px; letter-spacing: -1px; }
+        .stat-card.surfaces .value { color: var(--accent-bright); }
+        .stat-card.sc .value { color: var(--success); }
+        .stat-card.confidence .value { color: var(--warning); }
+        .stat-card.elements .value { color: var(--surface-interactive); }
+
+        /* ── SECTION ── */
+        .section {
+            margin-bottom: 28px;
+        }
+        .section-title {
+            font-size: 15px; font-weight: 700; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+            letter-spacing: -0.2px;
+        }
+        .section-title .icon { font-size: 18px; }
+
+        /* ── SURFACE CHIPS ── */
+        .surface-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .surface-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+        .surface-chip:hover { transform: scale(1.05); }
+        .surface-chip.active { border-width: 2px; transform: scale(1.08); }
+        .surface-chip .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .surface-chip .count {
+            background: rgba(0,0,0,0.25); border-radius: 10px;
+            padding: 1px 7px; font-size: 10px; font-weight: 700;
+            margin-left: 2px;
+        }
+
+        /* Surface-specific colors */
+        .chip-IMAGE_SURFACE { background: rgba(244,114,182,0.12); color: var(--surface-image); }
+        .chip-IMAGE_SURFACE .dot { background: var(--surface-image); }
+        .chip-IMAGE_SURFACE.active { border-color: var(--surface-image); }
+        .chip-INTERACTIVE_CONTROL_SURFACE { background: rgba(96,165,250,0.12); color: var(--surface-interactive); }
+        .chip-INTERACTIVE_CONTROL_SURFACE .dot { background: var(--surface-interactive); }
+        .chip-INTERACTIVE_CONTROL_SURFACE.active { border-color: var(--surface-interactive); }
+        .chip-FORM_INPUT_SURFACE { background: rgba(167,139,250,0.12); color: var(--surface-form); }
+        .chip-FORM_INPUT_SURFACE .dot { background: var(--surface-form); }
+        .chip-FORM_INPUT_SURFACE.active { border-color: var(--surface-form); }
+        .chip-MEDIA_SURFACE { background: rgba(251,146,60,0.12); color: var(--surface-media); }
+        .chip-MEDIA_SURFACE .dot { background: var(--surface-media); }
+        .chip-MEDIA_SURFACE.active { border-color: var(--surface-media); }
+        .chip-NAVIGATION_SURFACE { background: rgba(52,211,153,0.12); color: var(--surface-navigation); }
+        .chip-NAVIGATION_SURFACE .dot { background: var(--surface-navigation); }
+        .chip-NAVIGATION_SURFACE.active { border-color: var(--surface-navigation); }
+        .chip-STRUCTURE_SURFACE { background: rgba(251,191,36,0.12); color: var(--surface-structure); }
+        .chip-STRUCTURE_SURFACE .dot { background: var(--surface-structure); }
+        .chip-STRUCTURE_SURFACE.active { border-color: var(--surface-structure); }
+        .chip-DYNAMIC_UPDATE_SURFACE { background: rgba(248,113,113,0.12); color: var(--surface-dynamic); }
+        .chip-DYNAMIC_UPDATE_SURFACE .dot { background: var(--surface-dynamic); }
+        .chip-DYNAMIC_UPDATE_SURFACE.active { border-color: var(--surface-dynamic); }
+        .chip-PRESENTATION_SURFACE { background: rgba(148,163,184,0.12); color: var(--surface-presentation); }
+        .chip-PRESENTATION_SURFACE .dot { background: var(--surface-presentation); }
+        .chip-PRESENTATION_SURFACE.active { border-color: var(--surface-presentation); }
+
+        /* ── SC GRID ── */
+        .sc-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sc-badge {
+            padding: 6px 14px;
+            border-radius: var(--radius-xs);
+            font-size: 13px; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+        .sc-badge:hover { transform: scale(1.08); }
+        .sc-badge.active { transform: scale(1.1); }
+        .sc-badge.level-a { background: rgba(52,211,153,0.12); color: var(--success); }
+        .sc-badge.level-a.active { border-color: var(--success); }
+        .sc-badge.level-aa { background: rgba(251,191,36,0.12); color: var(--warning); }
+        .sc-badge.level-aa.active { border-color: var(--warning); }
+        .sc-badge.level-aaa { background: rgba(248,113,113,0.12); color: var(--danger); }
+        .sc-badge.level-aaa.active { border-color: var(--danger); }
+
+        /* ── DETAILS TABLE ── */
+        .details-table-wrap {
+            overflow-x: auto; border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .details-table {
+            width: 100%; border-collapse: collapse;
+            font-size: 13px;
+        }
+        .details-table th {
+            background: var(--bg-elevated);
+            padding: 12px 16px; text-align: left;
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            position: sticky; top: 0; z-index: 1;
+            cursor: pointer; user-select: none;
+        }
+        .details-table th:hover { color: var(--text-primary); }
+        .details-table th .sort-arrow { margin-left: 4px; font-size: 10px; }
+        .details-table td {
+            padding: 10px 16px; border-top: 1px solid var(--border);
+            vertical-align: top;
+        }
+        .details-table tr { transition: var(--transition); }
+        .details-table tr:hover td { background: var(--bg-card-hover); }
+        .details-table tr.highlight td { background: rgba(99,102,241,0.08); }
+        .details-table .cell-tag { font-family: 'Consolas','Menlo',monospace; font-weight: 600; color: var(--accent-bright); }
+        .details-table .cell-category .mini-chip {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 10px; font-weight: 700;
+        }
+        .details-table .cell-loc { font-family: 'Consolas','Menlo',monospace; font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; }
+        .details-table .cell-reasoning { color: var(--text-secondary); max-width: 300px; font-size: 12px; line-height: 1.5; }
+        .details-table .cell-sc { display: flex; flex-wrap: wrap; gap: 4px; }
+        .details-table .cell-sc .mini-sc {
+            padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;
+            background: rgba(52,211,153,0.1); color: var(--success);
+        }
+
+        /* ── CONFIDENCE BAR ── */
+        .confidence-bar-wrap {
+            display: flex; align-items: center; gap: 10px;
+            margin-top: 6px;
+        }
+        .confidence-bar {
+            flex: 1; height: 8px; background: var(--bg-elevated);
+            border-radius: 4px; overflow: hidden; max-width: 200px;
+        }
+        .confidence-bar .fill {
+            height: 100%; border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .confidence-bar .fill.high { background: linear-gradient(90deg, var(--success), #6ee7b7); }
+        .confidence-bar .fill.mid { background: linear-gradient(90deg, var(--warning), #fde68a); }
+        .confidence-bar .fill.low { background: linear-gradient(90deg, var(--danger), #fca5a5); }
+
+        /* ── UNIQUE ELEMENTS PANEL ── */
+        .unique-elements { display: flex; flex-wrap: wrap; gap: 8px; }
+        .unique-el {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: var(--radius-xs);
+            background: var(--bg-card); border: 1px solid var(--border);
+            font-size: 12px; font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .unique-el:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+        .unique-el.active { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+        .unique-el .el-tag { font-family: 'Consolas','Menlo',monospace; font-weight: 600; color: var(--accent-bright); }
+        .unique-el .el-count { color: var(--text-muted); font-size: 11px; }
+
+        /* ── FILTER MESSAGE ── */
+        .filter-bar {
+            display: none; align-items: center; gap: 10px;
+            padding: 10px 16px; margin-bottom: 16px;
+            background: rgba(99,102,241,0.08);
+            border: 1px solid var(--accent-dim);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .filter-bar.visible { display: flex; }
+        .filter-bar .filter-text { flex: 1; color: var(--accent-bright); }
+        .filter-bar .clear-btn {
+            padding: 4px 12px; border-radius: var(--radius-xs);
+            background: var(--accent-dim); color: #fff;
+            border: none; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: var(--transition);
+            font-family: inherit;
+        }
+        .filter-bar .clear-btn:hover { background: var(--accent); }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .animate-in { animation: fadeIn 0.3s ease forwards; }
+
+        /* ── REMOVE FILES BTN ── */
+        .remove-all-btn {
+            padding: 8px 16px;
+            background: rgba(248,113,113,0.1);
+            border: 1px solid rgba(248,113,113,0.3);
+            color: var(--danger);
+            border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: var(--transition);
+            font-family: inherit;
+        }
+        .remove-all-btn:hover { background: rgba(248,113,113,0.2); }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="logo">W</div>
+    <div>
+        <h1>WCAG Surface Mapper</h1>
+        <div class="subtitle">Result Watcher</div>
+    </div>
+</header>
+
+<div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>📂 Import Reports</h2>
+            <div class="import-zone" id="importZone">
+                <input type="file" id="fileInput" accept=".json" multiple>
+                <div class="icon">📄</div>
+                <div class="label">Drop <strong>.json</strong> files or <strong>click</strong> to import</div>
+            </div>
+            <div class="search-box">
+                <span class="icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Filter files...">
+            </div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <div class="file-counter" id="fileCounter">No files loaded</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-panel" id="mainPanel">
+        <div class="empty-state" id="emptyState">
+            <div class="icon">📊</div>
+            <h2>No Report Selected</h2>
+            <p>Import JSON output files from the <strong>out/</strong> directory using the sidebar. Click a file to visualize its WCAG surface analysis.</p>
+        </div>
+        <div id="reportView" style="display:none;"></div>
+    </main>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+    files: new Map(), // filename → data
+    activeFile: null,
+    activeFilter: { type: null, value: null }, // {type: 'surface'|'sc'|'element', value: string}
+    sortCol: null,
+    sortDir: 1,
+};
+
+// ── WCAG SC LEVEL MAPPING ──
+const SC_LEVELS = {
+    '1.1.1':'A','1.2.1':'A','1.2.2':'A','1.2.3':'A','1.2.5':'AA','1.3.1':'A',
+    '1.4.2':'A','1.4.3':'AA','1.4.5':'AA','1.4.6':'AAA','1.4.10':'AA',
+    '1.4.11':'AA','1.4.12':'AA','2.1.1':'A','2.1.2':'A','2.2.2':'A',
+    '2.3.1':'A','2.3.3':'AAA','2.4.1':'A','2.4.2':'A','2.4.3':'A','2.4.4':'A',
+    '2.4.5':'AA','2.4.6':'AA','2.4.7':'AA','2.4.10':'AAA','2.5.1':'A',
+    '2.5.3':'A','2.5.6':'AAA','2.5.7':'A','2.5.8':'AA','3.2.1':'A','3.2.2':'A',
+    '3.3.1':'A','3.3.2':'A','3.3.3':'AA','3.3.7':'A','3.3.8':'AA',
+    '4.1.2':'A','4.1.3':'AA',
+};
+
+const SC_NAMES = {
+    '1.1.1':'Text Alternatives','1.2.1':'Audio/Video-only','1.2.2':'Captions','1.2.3':'Audio Desc/Alt',
+    '1.2.5':'Audio Description','1.3.1':'Info & Relationships','1.4.2':'Audio Control',
+    '1.4.3':'Contrast (Min)','1.4.5':'Images of Text','1.4.6':'Contrast (Enhanced)',
+    '1.4.10':'Reflow','1.4.11':'Non-text Contrast','1.4.12':'Text Spacing',
+    '2.1.1':'Keyboard','2.1.2':'No Keyboard Trap','2.2.2':'Pause/Stop/Hide',
+    '2.3.1':'Three Flashes','2.3.3':'Animation','2.4.1':'Bypass Blocks',
+    '2.4.2':'Page Titled','2.4.3':'Focus Order','2.4.4':'Link Purpose',
+    '2.4.5':'Multiple Ways','2.4.6':'Headings & Labels','2.4.7':'Focus Visible',
+    '2.4.10':'Section Headings','2.5.1':'Pointer Gestures','2.5.3':'Label in Name',
+    '2.5.6':'Concurrent Input','2.5.7':'Dragging','2.5.8':'Target Size',
+    '3.2.1':'On Focus','3.2.2':'On Input','3.3.1':'Error ID','3.3.2':'Labels/Instructions',
+    '3.3.3':'Error Suggestion','3.3.7':'Redundant Entry','3.3.8':'Accessible Auth',
+    '4.1.2':'Name/Role/Value','4.1.3':'Status Messages',
+};
+
+const SURFACE_LABELS = {
+    IMAGE_SURFACE: 'Image',
+    INTERACTIVE_CONTROL_SURFACE: 'Interactive',
+    FORM_INPUT_SURFACE: 'Form Input',
+    MEDIA_SURFACE: 'Media',
+    NAVIGATION_SURFACE: 'Navigation',
+    STRUCTURE_SURFACE: 'Structure',
+    DYNAMIC_UPDATE_SURFACE: 'Dynamic',
+    PRESENTATION_SURFACE: 'Presentation',
+};
+
+// ── FILE IMPORT ──
+const importZone = document.getElementById('importZone');
+const fileInput = document.getElementById('fileInput');
+const searchInput = document.getElementById('searchInput');
+
+importZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+importZone.addEventListener('dragover', e => { e.preventDefault(); importZone.classList.add('dragover'); });
+importZone.addEventListener('dragleave', () => importZone.classList.remove('dragover'));
+importZone.addEventListener('drop', e => {
+    e.preventDefault(); importZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(fileListObj) {
+    Array.from(fileListObj).forEach(file => {
+        if (!file.name.endsWith('.json')) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                state.files.set(file.name, data);
+                renderFileList();
+                if (!state.activeFile) selectFile(file.name);
+            } catch(err) { console.error('Invalid JSON:', file.name, err); }
+        };
+        reader.readAsText(file);
+    });
+}
+
+searchInput.addEventListener('input', () => renderFileList());
+
+// ── FILE LIST ──
+function renderFileList() {
+    const list = document.getElementById('fileList');
+    const counter = document.getElementById('fileCounter');
+    const query = searchInput.value.toLowerCase();
+    list.innerHTML = '';
+
+    let shown = 0;
+    for (const [name, data] of state.files) {
+        if (query && !name.toLowerCase().includes(query)) continue;
+        shown++;
+        const item = document.createElement('div');
+        item.className = 'file-item' + (state.activeFile === name ? ' active' : '');
+        const shortName = name.replace(/\.json$/, '').replace(/^src_/, '').replaceAll('_', '/');
+        const surfaces = data.detected_surfaces ? data.detected_surfaces.length : 0;
+        const sc = data.potential_wcag_sc ? data.potential_wcag_sc.length : 0;
+        const conf = data.confidence_score != null ? data.confidence_score : '-';
+
+        item.innerHTML = `
+            <div class="name" title="${name}">${shortName}</div>
+            <div class="meta">
+                <span class="badge surfaces-count">${surfaces} surfaces</span>
+                <span class="badge sc-count">${sc} SC</span>
+                <span class="confidence" style="color:${getConfidenceColor(conf)}">${typeof conf === 'number' ? (conf * 100).toFixed(0) + '%' : conf}</span>
+            </div>
+        `;
+        item.addEventListener('click', () => selectFile(name));
+        list.appendChild(item);
+    }
+    counter.textContent = `${shown} of ${state.files.size} files`;
+}
+
+function selectFile(name) {
+    state.activeFile = name;
+    state.activeFilter = { type: null, value: null };
+    state.sortCol = null;
+    renderFileList();
+    renderReport();
+}
+
+function getConfidenceColor(v) {
+    if (typeof v !== 'number') return 'var(--text-muted)';
+    if (v >= 0.8) return 'var(--success)';
+    if (v >= 0.5) return 'var(--warning)';
+    return 'var(--danger)';
+}
+
+function getConfidenceClass(v) {
+    if (v >= 0.8) return 'high';
+    if (v >= 0.5) return 'mid';
+    return 'low';
+}
+
+// ── RENDER REPORT ──
+function renderReport() {
+    const view = document.getElementById('reportView');
+    const empty = document.getElementById('emptyState');
+    if (!state.activeFile) { view.style.display = 'none'; empty.style.display = 'flex'; return; }
+    empty.style.display = 'none'; view.style.display = 'block';
+
+    const data = state.files.get(state.activeFile);
+    if (!data) return;
+
+    const surfaces = data.detected_surfaces || [];
+    const scList = data.potential_wcag_sc || [];
+    const conf = data.confidence_score != null ? data.confidence_score : 1;
+    const details = (data.details || []).filter(d => d.category);
+
+    // Count unique elements
+    const elemCounts = {};
+    details.forEach(d => { elemCounts[d.element] = (elemCounts[d.element] || 0) + 1; });
+
+    // Count per-surface
+    const surfaceCounts = {};
+    details.forEach(d => { surfaceCounts[d.category] = (surfaceCounts[d.category] || 0) + 1; });
+
+    // Count per-SC
+    const scCounts = {};
+    details.forEach(d => { (d.sc || []).forEach(s => { scCounts[s] = (scCounts[s] || 0) + 1; }); });
+
+    const shortName = state.activeFile.replace(/\.json$/, '').replace(/^src_/, '').replaceAll('_', '/');
+
+    view.innerHTML = `
+        <div class="animate-in">
+            <!-- HEADER -->
+            <div class="report-header">
+                <div class="filename">${shortName}</div>
+                <div class="filepath">${data.file || state.activeFile}</div>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-row">
+                <div class="stat-card surfaces">
+                    <div class="label">Surfaces</div>
+                    <div class="value">${surfaces.length}</div>
+                </div>
+                <div class="stat-card sc">
+                    <div class="label">WCAG SC</div>
+                    <div class="value">${scList.length}</div>
+                </div>
+                <div class="stat-card confidence">
+                    <div class="label">Confidence</div>
+                    <div class="value">${(conf * 100).toFixed(0)}%</div>
+                    <div class="confidence-bar-wrap">
+                        <div class="confidence-bar"><div class="fill ${getConfidenceClass(conf)}" style="width:${conf * 100}%"></div></div>
+                    </div>
+                </div>
+                <div class="stat-card elements">
+                    <div class="label">Unique Elements</div>
+                    <div class="value">${Object.keys(elemCounts).length}</div>
+                </div>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="filter-bar" id="filterBar">
+                <span class="filter-text" id="filterText"></span>
+                <button class="clear-btn" id="clearFilter">Clear Filter</button>
+            </div>
+
+            <!-- DETECTED SURFACES -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🎯</span> Detected Surfaces</div>
+                <div class="surface-chips" id="surfaceChips">
+                    ${surfaces.map(s => `
+                        <div class="surface-chip chip-${s} ${state.activeFilter.type === 'surface' && state.activeFilter.value === s ? 'active' : ''}"
+                             data-surface="${s}" title="Click to filter details">
+                            <span class="dot"></span>
+                            ${SURFACE_LABELS[s] || s}
+                            <span class="count">${surfaceCounts[s] || 0}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- WCAG SC -->
+            <div class="section">
+                <div class="section-title"><span class="icon">📋</span> Applicable Success Criteria</div>
+                <div class="sc-grid" id="scGrid">
+                    ${scList.map(sc => {
+                        const lvl = SC_LEVELS[sc] || 'A';
+                        const name = SC_NAMES[sc] || '';
+                        return `<div class="sc-badge level-${lvl.toLowerCase()} ${state.activeFilter.type === 'sc' && state.activeFilter.value === sc ? 'active' : ''}"
+                                     data-sc="${sc}" title="${sc} ${name} (Level ${lvl}) — ${scCounts[sc] || 0} elements. Click to filter.">
+                                    ${sc}
+                                </div>`;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- UNIQUE ELEMENTS -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🧩</span> Unique Elements</div>
+                <div class="unique-elements" id="uniqueElements">
+                    ${Object.entries(elemCounts).sort((a,b) => b[1]-a[1]).map(([el, cnt]) => `
+                        <div class="unique-el ${state.activeFilter.type === 'element' && state.activeFilter.value === el ? 'active' : ''}"
+                             data-element="${el}">
+                            <span class="el-tag">&lt;${el}&gt;</span>
+                            <span class="el-count">×${cnt}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- DETAILS TABLE -->
+            <div class="section">
+                <div class="section-title"><span class="icon">📑</span> Element Details <span style="font-weight:400;color:var(--text-muted);font-size:12px;" id="detailCount"></span></div>
+                <div class="details-table-wrap">
+                    <table class="details-table" id="detailsTable">
+                        <thead>
+                            <tr>
+                                <th data-col="element">Element <span class="sort-arrow"></span></th>
+                                <th data-col="category">Surface <span class="sort-arrow"></span></th>
+                                <th data-col="loc">Location <span class="sort-arrow"></span></th>
+                                <th data-col="reasoning">Reasoning</th>
+                                <th data-col="sc">Success Criteria</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Wire interactions
+    bindInteractions(details);
+    renderDetailsTable(details);
+}
+
+function bindInteractions(details) {
+    // Surface chips
+    document.querySelectorAll('.surface-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const surface = chip.dataset.surface;
+            if (state.activeFilter.type === 'surface' && state.activeFilter.value === surface) {
+                clearFilter(details);
+            } else {
+                setFilter('surface', surface, details);
+            }
+        });
+    });
+
+    // SC badges
+    document.querySelectorAll('.sc-badge').forEach(badge => {
+        badge.addEventListener('click', () => {
+            const sc = badge.dataset.sc;
+            if (state.activeFilter.type === 'sc' && state.activeFilter.value === sc) {
+                clearFilter(details);
+            } else {
+                setFilter('sc', sc, details);
+            }
+        });
+    });
+
+    // Unique elements
+    document.querySelectorAll('.unique-el').forEach(el => {
+        el.addEventListener('click', () => {
+            const element = el.dataset.element;
+            if (state.activeFilter.type === 'element' && state.activeFilter.value === element) {
+                clearFilter(details);
+            } else {
+                setFilter('element', element, details);
+            }
+        });
+    });
+
+    // Table header sorting
+    document.querySelectorAll('.details-table th[data-col]').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.col;
+            if (state.sortCol === col) { state.sortDir *= -1; }
+            else { state.sortCol = col; state.sortDir = 1; }
+            renderDetailsTable(details);
+        });
+    });
+
+    // Clear filter btn
+    const clearBtn = document.getElementById('clearFilter');
+    if (clearBtn) clearBtn.addEventListener('click', () => clearFilter(details));
+}
+
+function setFilter(type, value, details) {
+    state.activeFilter = { type, value };
+    updateFilterUI();
+    renderDetailsTable(details);
+    updateChipStates();
+}
+
+function clearFilter(details) {
+    state.activeFilter = { type: null, value: null };
+    updateFilterUI();
+    renderDetailsTable(details);
+    updateChipStates();
+}
+
+function updateFilterUI() {
+    const bar = document.getElementById('filterBar');
+    const text = document.getElementById('filterText');
+    if (state.activeFilter.type) {
+        bar.classList.add('visible');
+        const labels = { surface: '🎯 Surface', sc: '📋 SC', element: '🧩 Element' };
+        let valLabel = state.activeFilter.value;
+        if (state.activeFilter.type === 'surface') valLabel = SURFACE_LABELS[valLabel] || valLabel;
+        if (state.activeFilter.type === 'sc') valLabel = `${valLabel} — ${SC_NAMES[valLabel] || ''}`;
+        text.textContent = `Filtering by ${labels[state.activeFilter.type]}: ${valLabel}`;
+    } else {
+        bar.classList.remove('visible');
+    }
+}
+
+function updateChipStates() {
+    document.querySelectorAll('.surface-chip').forEach(c => {
+        c.classList.toggle('active', state.activeFilter.type === 'surface' && state.activeFilter.value === c.dataset.surface);
+    });
+    document.querySelectorAll('.sc-badge').forEach(c => {
+        c.classList.toggle('active', state.activeFilter.type === 'sc' && state.activeFilter.value === c.dataset.sc);
+    });
+    document.querySelectorAll('.unique-el').forEach(c => {
+        c.classList.toggle('active', state.activeFilter.type === 'element' && state.activeFilter.value === c.dataset.element);
+    });
+}
+
+function renderDetailsTable(allDetails) {
+    const body = document.getElementById('detailsBody');
+    const countEl = document.getElementById('detailCount');
+    if (!body) return;
+
+    // Filter
+    let filtered = allDetails;
+    const f = state.activeFilter;
+    if (f.type === 'surface') filtered = allDetails.filter(d => d.category === f.value);
+    else if (f.type === 'sc') filtered = allDetails.filter(d => (d.sc || []).includes(f.value));
+    else if (f.type === 'element') filtered = allDetails.filter(d => d.element === f.value);
+
+    // Sort
+    if (state.sortCol) {
+        filtered = [...filtered].sort((a, b) => {
+            let va, vb;
+            switch (state.sortCol) {
+                case 'element': va = a.element; vb = b.element; break;
+                case 'category': va = a.category; vb = b.category; break;
+                case 'loc': va = a.loc?.start?.line || 0; vb = b.loc?.start?.line || 0; return (va - vb) * state.sortDir;
+                case 'sc': va = (a.sc||[]).length; vb = (b.sc||[]).length; return (va - vb) * state.sortDir;
+                default: return 0;
+            }
+            return String(va).localeCompare(String(vb)) * state.sortDir;
+        });
+    }
+
+    // Update sort arrows
+    document.querySelectorAll('.details-table th').forEach(th => {
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) {
+            if (th.dataset.col === state.sortCol) arrow.textContent = state.sortDir === 1 ? '▲' : '▼';
+            else arrow.textContent = '';
+        }
+    });
+
+    if (countEl) countEl.textContent = `(${filtered.length} of ${allDetails.length})`;
+
+    body.innerHTML = filtered.map(d => {
+        const loc = d.loc || {};
+        const start = loc.start || {};
+        const end = loc.end || {};
+        const locStr = `L${start.line || '?'}:${start.column || '?'} → L${end.line || '?'}:${end.column || '?'}`;
+        const chipClass = `chip-${d.category}`;
+        const scHtml = (d.sc || []).map(s => `<span class="mini-sc">${s}</span>`).join('');
+        const miniChipBg = getMiniChipStyle(d.category);
+
+        return `<tr>
+            <td class="cell-tag">&lt;${d.element}&gt;</td>
+            <td class="cell-category"><span class="mini-chip" style="${miniChipBg}">${SURFACE_LABELS[d.category] || d.category}</span></td>
+            <td class="cell-loc">${locStr}</td>
+            <td class="cell-reasoning">${d.reasoning || '-'}</td>
+            <td><div class="cell-sc">${scHtml}</div></td>
+        </tr>`;
+    }).join('');
+}
+
+function getMiniChipStyle(category) {
+    const colors = {
+        IMAGE_SURFACE: 'rgba(244,114,182,0.15);color:#f472b6',
+        INTERACTIVE_CONTROL_SURFACE: 'rgba(96,165,250,0.15);color:#60a5fa',
+        FORM_INPUT_SURFACE: 'rgba(167,139,250,0.15);color:#a78bfa',
+        MEDIA_SURFACE: 'rgba(251,146,60,0.15);color:#fb923c',
+        NAVIGATION_SURFACE: 'rgba(52,211,153,0.15);color:#34d399',
+        STRUCTURE_SURFACE: 'rgba(251,191,36,0.15);color:#fbbf24',
+        DYNAMIC_UPDATE_SURFACE: 'rgba(248,113,113,0.15);color:#f87171',
+        PRESENTATION_SURFACE: 'rgba(148,163,184,0.15);color:#94a3b8',
+    };
+    return `background:${colors[category] || 'rgba(148,163,184,0.15);color:#94a3b8'}`;
+}
+</script>
+</body>
+</html>

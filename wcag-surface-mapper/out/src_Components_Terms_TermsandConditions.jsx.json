@@ -1,0 +1,239 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\src\\Components\\Terms\\TermsandConditions.jsx",
+  "detected_surfaces": [
+    "PRESENTATION_SURFACE",
+    "STRUCTURE_SURFACE"
+  ],
+  "potential_wcag_sc": [
+    "1.3.1",
+    "1.4.3",
+    "1.4.6",
+    "1.4.10",
+    "1.4.11",
+    "1.4.12",
+    "2.2.2",
+    "2.3.3",
+    "2.4.1",
+    "2.4.6",
+    "2.4.10",
+    "2.5.8"
+  ],
+  "confidence_score": 0.83,
+  "details": [
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 8,
+          "column": 6,
+          "index": 130
+        },
+        "end": {
+          "line": 72,
+          "column": 12,
+          "index": 3936
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h2",
+      "loc": {
+        "start": {
+          "line": 9,
+          "column": 8,
+          "index": 172
+        },
+        "end": {
+          "line": 9,
+          "column": 35,
+          "index": 199
+        }
+      },
+      "reasoning": "Structural element or landmark: h2 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 10,
+          "column": 8,
+          "index": 209
+        },
+        "end": {
+          "line": 71,
+          "column": 14,
+          "index": 3922
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 11,
+          "column": 10,
+          "index": 251
+        },
+        "end": {
+          "line": 11,
+          "column": 69,
+          "index": 310
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 21,
+          "column": 10,
+          "index": 874
+        },
+        "end": {
+          "line": 21,
+          "column": 53,
+          "index": 917
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 31,
+          "column": 10,
+          "index": 1481
+        },
+        "end": {
+          "line": 31,
+          "column": 59,
+          "index": 1530
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 41,
+          "column": 10,
+          "index": 2094
+        },
+        "end": {
+          "line": 41,
+          "column": 73,
+          "index": 2157
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 51,
+          "column": 10,
+          "index": 2721
+        },
+        "end": {
+          "line": 51,
+          "column": 42,
+          "index": 2753
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h6",
+      "loc": {
+        "start": {
+          "line": 61,
+          "column": 10,
+          "index": 3317
+        },
+        "end": {
+          "line": 61,
+          "column": 47,
+          "index": 3354
+        }
+      },
+      "reasoning": "Structural element or landmark: h6 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    }
+  ]
+}

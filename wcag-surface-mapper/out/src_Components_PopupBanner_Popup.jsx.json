@@ -1,0 +1,313 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\src\\Components\\PopupBanner\\Popup.jsx",
+  "detected_surfaces": [
+    "PRESENTATION_SURFACE",
+    "INTERACTIVE_CONTROL_SURFACE",
+    "IMAGE_SURFACE",
+    "STRUCTURE_SURFACE",
+    "FORM_INPUT_SURFACE"
+  ],
+  "potential_wcag_sc": [
+    "1.1.1",
+    "1.3.1",
+    "1.4.3",
+    "1.4.5",
+    "1.4.6",
+    "1.4.10",
+    "1.4.11",
+    "1.4.12",
+    "2.1.1",
+    "2.1.2",
+    "2.2.2",
+    "2.3.3",
+    "2.4.1",
+    "2.4.3",
+    "2.4.4",
+    "2.4.6",
+    "2.4.7",
+    "2.4.10",
+    "2.5.1",
+    "2.5.3",
+    "2.5.6",
+    "2.5.7",
+    "2.5.8",
+    "3.2.2",
+    "3.3.1",
+    "3.3.2",
+    "3.3.3",
+    "3.3.7",
+    "3.3.8",
+    "4.1.2"
+  ],
+  "confidence_score": 0.76,
+  "details": [
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 19,
+          "column": 6,
+          "index": 422
+        },
+        "end": {
+          "line": 39,
+          "column": 12,
+          "index": 1190
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 20,
+          "column": 8,
+          "index": 463
+        },
+        "end": {
+          "line": 38,
+          "column": 14,
+          "index": 1176
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "INTERACTIVE_CONTROL_SURFACE",
+      "element": "button",
+      "loc": {
+        "start": {
+          "line": 21,
+          "column": 10,
+          "index": 537
+        },
+        "end": {
+          "line": 23,
+          "column": 19,
+          "index": 628
+        }
+      },
+      "reasoning": "Interactive signals detected: tag=button, role=, events=[onClick]",
+      "sc": [
+        "2.1.1",
+        "2.1.2",
+        "2.4.3",
+        "2.4.7",
+        "2.5.1",
+        "2.5.3",
+        "2.5.6",
+        "2.5.7",
+        "2.5.8",
+        "3.2.2",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "button",
+      "loc": {
+        "start": {
+          "line": 21,
+          "column": 10,
+          "index": 537
+        },
+        "end": {
+          "line": 23,
+          "column": 19,
+          "index": 628
+        }
+      },
+      "reasoning": "Presentation details found: tag=button, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 24,
+          "column": 10,
+          "index": 640
+        },
+        "end": {
+          "line": 26,
+          "column": 16,
+          "index": 739
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 25,
+          "column": 12,
+          "index": 682
+        },
+        "end": {
+          "line": 25,
+          "column": 51,
+          "index": 721
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 27,
+          "column": 10,
+          "index": 751
+        },
+        "end": {
+          "line": 37,
+          "column": 16,
+          "index": 1160
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h2",
+      "loc": {
+        "start": {
+          "line": 28,
+          "column": 12,
+          "index": 794
+        },
+        "end": {
+          "line": 28,
+          "column": 46,
+          "index": 828
+        }
+      },
+      "reasoning": "Structural element or landmark: h2 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "FORM_INPUT_SURFACE",
+      "element": "input",
+      "loc": {
+        "start": {
+          "line": 34,
+          "column": 14,
+          "index": 1006
+        },
+        "end": {
+          "line": 34,
+          "column": 78,
+          "index": 1070
+        }
+      },
+      "reasoning": "Form control tag or role: input | role: ",
+      "sc": [
+        "1.3.1",
+        "3.3.1",
+        "3.3.2",
+        "3.3.3",
+        "3.3.7",
+        "3.3.8",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "INTERACTIVE_CONTROL_SURFACE",
+      "element": "button",
+      "loc": {
+        "start": {
+          "line": 35,
+          "column": 14,
+          "index": 1086
+        },
+        "end": {
+          "line": 35,
+          "column": 49,
+          "index": 1121
+        }
+      },
+      "reasoning": "Interactive signals detected: tag=button, role=, events=[]",
+      "sc": [
+        "2.1.1",
+        "2.1.2",
+        "2.4.3",
+        "2.4.7",
+        "2.5.1",
+        "2.5.3",
+        "2.5.6",
+        "2.5.7",
+        "2.5.8",
+        "3.2.2",
+        "4.1.2"
+      ]
+    }
+  ]
+}

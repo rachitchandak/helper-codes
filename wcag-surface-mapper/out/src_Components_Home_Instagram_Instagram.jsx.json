@@ -1,0 +1,717 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\src\\Components\\Home\\Instagram\\Instagram.jsx",
+  "detected_surfaces": [
+    "PRESENTATION_SURFACE",
+    "STRUCTURE_SURFACE",
+    "IMAGE_SURFACE"
+  ],
+  "potential_wcag_sc": [
+    "1.1.1",
+    "1.3.1",
+    "1.4.3",
+    "1.4.5",
+    "1.4.6",
+    "1.4.10",
+    "1.4.11",
+    "1.4.12",
+    "2.2.2",
+    "2.3.3",
+    "2.4.1",
+    "2.4.4",
+    "2.4.6",
+    "2.4.10",
+    "2.5.8"
+  ],
+  "confidence_score": 0.74,
+  "details": [
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 19,
+          "column": 6,
+          "index": 836
+        },
+        "end": {
+          "line": 59,
+          "column": 12,
+          "index": 2186
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h2",
+      "loc": {
+        "start": {
+          "line": 20,
+          "column": 8,
+          "index": 873
+        },
+        "end": {
+          "line": 20,
+          "column": 22,
+          "index": 887
+        }
+      },
+      "reasoning": "Structural element or landmark: h2 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 21,
+          "column": 8,
+          "index": 897
+        },
+        "end": {
+          "line": 58,
+          "column": 14,
+          "index": 2172
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 22,
+          "column": 10,
+          "index": 941
+        },
+        "end": {
+          "line": 24,
+          "column": 16,
+          "index": 1031
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 23,
+          "column": 12,
+          "index": 986
+        },
+        "end": {
+          "line": 23,
+          "column": 39,
+          "index": 1013
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 25,
+          "column": 10,
+          "index": 1043
+        },
+        "end": {
+          "line": 27,
+          "column": 16,
+          "index": 1133
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 26,
+          "column": 12,
+          "index": 1088
+        },
+        "end": {
+          "line": 26,
+          "column": 39,
+          "index": 1115
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 28,
+          "column": 10,
+          "index": 1145
+        },
+        "end": {
+          "line": 30,
+          "column": 16,
+          "index": 1235
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 29,
+          "column": 12,
+          "index": 1190
+        },
+        "end": {
+          "line": 29,
+          "column": 39,
+          "index": 1217
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 31,
+          "column": 10,
+          "index": 1247
+        },
+        "end": {
+          "line": 33,
+          "column": 16,
+          "index": 1337
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 32,
+          "column": 12,
+          "index": 1292
+        },
+        "end": {
+          "line": 32,
+          "column": 39,
+          "index": 1319
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 34,
+          "column": 10,
+          "index": 1349
+        },
+        "end": {
+          "line": 36,
+          "column": 16,
+          "index": 1439
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 35,
+          "column": 12,
+          "index": 1394
+        },
+        "end": {
+          "line": 35,
+          "column": 39,
+          "index": 1421
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 37,
+          "column": 10,
+          "index": 1451
+        },
+        "end": {
+          "line": 39,
+          "column": 16,
+          "index": 1541
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 38,
+          "column": 12,
+          "index": 1496
+        },
+        "end": {
+          "line": 38,
+          "column": 39,
+          "index": 1523
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 40,
+          "column": 10,
+          "index": 1553
+        },
+        "end": {
+          "line": 42,
+          "column": 16,
+          "index": 1643
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 41,
+          "column": 12,
+          "index": 1598
+        },
+        "end": {
+          "line": 41,
+          "column": 39,
+          "index": 1625
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 43,
+          "column": 10,
+          "index": 1655
+        },
+        "end": {
+          "line": 45,
+          "column": 16,
+          "index": 1745
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 44,
+          "column": 12,
+          "index": 1700
+        },
+        "end": {
+          "line": 44,
+          "column": 39,
+          "index": 1727
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 46,
+          "column": 10,
+          "index": 1757
+        },
+        "end": {
+          "line": 48,
+          "column": 16,
+          "index": 1847
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 47,
+          "column": 12,
+          "index": 1802
+        },
+        "end": {
+          "line": 47,
+          "column": 39,
+          "index": 1829
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 49,
+          "column": 10,
+          "index": 1859
+        },
+        "end": {
+          "line": 51,
+          "column": 16,
+          "index": 1950
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 50,
+          "column": 12,
+          "index": 1904
+        },
+        "end": {
+          "line": 50,
+          "column": 40,
+          "index": 1932
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 52,
+          "column": 10,
+          "index": 1962
+        },
+        "end": {
+          "line": 54,
+          "column": 16,
+          "index": 2053
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 53,
+          "column": 12,
+          "index": 2007
+        },
+        "end": {
+          "line": 53,
+          "column": 40,
+          "index": 2035
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 55,
+          "column": 10,
+          "index": 2065
+        },
+        "end": {
+          "line": 57,
+          "column": 16,
+          "index": 2156
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "IMAGE_SURFACE",
+      "element": "img",
+      "loc": {
+        "start": {
+          "line": 56,
+          "column": 12,
+          "index": 2110
+        },
+        "end": {
+          "line": 56,
+          "column": 40,
+          "index": 2138
+        }
+      },
+      "reasoning": "Matched image tag or role: img | role: ",
+      "sc": [
+        "1.1.1",
+        "1.3.1",
+        "1.4.3",
+        "1.4.5",
+        "2.4.4"
+      ]
+    }
+  ]
+}

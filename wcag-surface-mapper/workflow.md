@@ -16,11 +16,9 @@ wcag-surface-mapper/
 │   │   └── index.ts            # StaticAstEngine facade (routes files to correct parser)
 │   ├── layer2-semantics/
 │   │   └── HeuristicEngine.ts  # SemanticNode[] → ClassifiedSurface[] (rule-based)
-│   ├── layer3-render/
-│   │   └── RenderValidationEngine.ts  # Runtime validation (Puppeteer headless)
-│   ├── layer4-mapping/
+│   ├── layer3-mapping/
 │   │   └── ScMappingEngine.ts  # ClassifiedSurface[] → MappedSurface[] (SC lookup)
-│   ├── layer5-reporting/
+│   ├── layer4-reporting/
 │   │   └── ReportingEngine.ts  # MappedSurface[] → FinalReportSchema (JSON output)
 │   └── index.ts                # CLI entry point + WcagSurfaceAnalyzer orchestrator
 ├── tsconfig.json
@@ -40,11 +38,9 @@ flowchart TD
     E -->|"Filters by extension"| C
     C --> L1["Layer 1: StaticAstEngine.parseFile()"]
     L1 --> L2["Layer 2: SemanticHeuristicEngine.classify()"]
-    L2 --> L4["Layer 4: ScMappingEngine.mapSurfaces()"]
-    L4 --> L5["Layer 5: ReportingEngine.generateReport()"]
-    L4 --> L3["Layer 3: RenderValidationEngine.validate()"]
-    L5 --> OUT1["Per-file JSON report"]
-    L3 --> OUT1
+    L2 --> L3["Layer 3: ScMappingEngine.mapSurfaces()"]
+    L3 --> L4["Layer 4: ReportingEngine.generateReport()"]
+    L4 --> OUT1["Per-file JSON report"]
     D --> AGG["Aggregate component report"]
     AGG --> OUT2["project-report.json"]
 ```
@@ -72,7 +68,7 @@ flowchart TD
 
 | Type | Purpose |
 |:--|:--|
-| `SuccessCriterion` | One WCAG SC entry. Fields: `id` (e.g. `"2.5.8"`), `name`, `surfaces` (which `SurfaceCategory` values it applies to), `requiresRuntime` (boolean) |
+| `SuccessCriterion` | One WCAG SC entry. Fields: `id` (e.g. `"2.5.8"`), `name`, `surfaces` (which `SurfaceCategory` values it applies to) |
 | `WCAG_2_2_MATRIX` | Exported constant array of 40 `SuccessCriterion` objects covering the full WCAG 2.2 standard |
 
 ---
@@ -172,26 +168,7 @@ Evaluates 8 independent rule blocks. **A single node can match multiple rules** 
 
 ---
 
-## Layer 3 — Render Simulation Layer (`src/layer3-render/`)
-
-**Purpose:** Perform runtime validations that cannot be determined statically (contrast, focus order, target size).
-
-### `RenderValidationEngine`
-
-**Function:** `validate(filePath, classification): Promise<any>`
-
-1. **Skip non-HTML:** If `framework !== 'html'`, returns `{ msg: 'Runtime validation skipped...' }`
-2. **Check if runtime needed:** Scans `classification.mappedSurfaces` for any SC with `requiresRuntime: true`
-3. **Execute headless checks:** (Currently mocked) Would use Puppeteer to:
-   - Count focusable elements (Tab order / SC 2.4.3, 2.1.2)
-   - Calculate contrast ratios (SC 1.4.3)
-   - Measure clickable target sizes (SC 2.5.8)
-
-> **Current state:** Returns mocked data because Chrome binary is not installed locally. The architecture is in place for real Puppeteer integration.
-
----
-
-## Layer 4 — SC Mapping Engine (`src/layer4-mapping/`)
+## Layer 3 — SC Mapping Engine (`src/layer4-mapping/`)
 
 **Purpose:** Connect each classified surface to its applicable WCAG 2.2 Success Criteria.
 
@@ -210,15 +187,13 @@ Evaluates 8 independent rule blocks. **A single node can match multiple rules** 
 ```
 Node: <button onClick="save()">
   ↓ Layer 2 classifies as: INTERACTIVE_CONTROL_SURFACE
-  ↓ Layer 4 looks up WCAG_2_2_MATRIX entries containing INTERACTIVE_CONTROL_SURFACE
+  ↓ Layer 3 looks up WCAG_2_2_MATRIX entries containing INTERACTIVE_CONTROL_SURFACE
   ↓ Result: [2.1.1, 2.1.2, 2.4.3, 2.4.7, 2.5.1, 2.5.3, 2.5.6, 2.5.7, 2.5.8, 3.2.2, 4.1.2]
 ```
 
-Each SC in the matrix also carries `requiresRuntime: boolean` which tells the reporting engine whether the SC can be verified statically or needs Layer 3.
-
 ---
 
-## Layer 5 — Reporting Engine (`src/layer5-reporting/`)
+## Layer 4 — Reporting Engine (`src/layer5-reporting/`)
 
 **Purpose:** Aggregate all mapped surfaces into the final machine-readable JSON output.
 
@@ -230,7 +205,6 @@ Each SC in the matrix also carries `requiresRuntime: boolean` which tells the re
 2. Uses `Set` objects to **deduplicate**:
    - `surfacesSet`: unique surface categories found
    - `potentialScSet`: unique SC IDs applicable
-   - `requiresRuntimeSet`: unique SC IDs that need runtime validation
 3. Computes `confidence_score` as the average confidence across all classified surfaces
 4. Builds `details` array with per-node breakdown: `category`, `element` (tag), `loc`, `reasoning`, `sc` (list of SC IDs)
 5. Sorts SC arrays numerically (e.g. `1.1.1` before `1.4.3` before `2.1.1`)
@@ -242,7 +216,6 @@ Each SC in the matrix also carries `requiresRuntime: boolean` which tells the re
   "file": "path/to/file.html",
   "detected_surfaces": ["INTERACTIVE_CONTROL_SURFACE", "FORM_INPUT_SURFACE"],
   "potential_wcag_sc": ["2.1.1", "3.3.1", "4.1.2"],
-  "requires_runtime_validation": ["2.1.1"],
   "confidence_score": 0.85,
   "details": [{ "category": "...", "element": "...", "loc": {...}, "reasoning": "...", "sc": [...] }]
 }
@@ -254,17 +227,17 @@ Each SC in the matrix also carries `requiresRuntime: boolean` which tells the re
 
 ### `WcagSurfaceAnalyzer` Class
 
-Instantiates all five layer engines as private members and orchestrates the pipeline.
+Instantiates all four layer engines as private members and orchestrates the pipeline.
 
-### `analyzeFile(filePath): Promise<FinalReportSchema>`
+### `analyzeFile(filePath): FinalReportSchema`
 
 Single-file analysis pipeline:
 
 ```
-Read file content → Layer 1 (parse) → Layer 2 (classify) → Layer 4 (map SC) → Layer 5 (report) → Layer 3 (runtime check) → return JSON
+Read file content → Layer 1 (parse) → Layer 2 (classify) → Layer 3 (map SC) → Layer 4 (report) → return JSON
 ```
 
-### `analyzeProject(dirPath, outputDir): Promise<void>`
+### `analyzeProject(dirPath, outputDir): void`
 
 Project-level analysis:
 

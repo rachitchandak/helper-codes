@@ -1,0 +1,114 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\src\\Components\\ScrollButton\\ScrollToTop.jsx",
+  "detected_surfaces": [
+    "PRESENTATION_SURFACE",
+    "INTERACTIVE_CONTROL_SURFACE"
+  ],
+  "potential_wcag_sc": [
+    "1.4.3",
+    "1.4.6",
+    "1.4.10",
+    "1.4.11",
+    "1.4.12",
+    "2.1.1",
+    "2.1.2",
+    "2.2.2",
+    "2.3.3",
+    "2.4.3",
+    "2.4.7",
+    "2.5.1",
+    "2.5.3",
+    "2.5.6",
+    "2.5.7",
+    "2.5.8",
+    "3.2.2",
+    "4.1.2"
+  ],
+  "confidence_score": 0.63,
+  "details": [
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 26,
+          "column": 4,
+          "index": 554
+        },
+        "end": {
+          "line": 32,
+          "column": 10,
+          "index": 750
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "INTERACTIVE_CONTROL_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 28,
+          "column": 8,
+          "index": 616
+        },
+        "end": {
+          "line": 30,
+          "column": 14,
+          "index": 728
+        }
+      },
+      "reasoning": "Interactive signals detected: tag=div, role=, events=[onClick]",
+      "sc": [
+        "2.1.1",
+        "2.1.2",
+        "2.4.3",
+        "2.4.7",
+        "2.5.1",
+        "2.5.3",
+        "2.5.6",
+        "2.5.7",
+        "2.5.8",
+        "3.2.2",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 28,
+          "column": 8,
+          "index": 616
+        },
+        "end": {
+          "line": 30,
+          "column": 14,
+          "index": 728
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    }
+  ]
+}

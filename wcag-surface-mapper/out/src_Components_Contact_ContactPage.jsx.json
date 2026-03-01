@@ -1,0 +1,430 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\uomo-ecommerce-website-reactjs\\src\\Components\\Contact\\ContactPage.jsx",
+  "detected_surfaces": [
+    "PRESENTATION_SURFACE",
+    "STRUCTURE_SURFACE",
+    "FORM_INPUT_SURFACE",
+    "INTERACTIVE_CONTROL_SURFACE"
+  ],
+  "potential_wcag_sc": [
+    "1.3.1",
+    "1.4.3",
+    "1.4.6",
+    "1.4.10",
+    "1.4.11",
+    "1.4.12",
+    "2.1.1",
+    "2.1.2",
+    "2.2.2",
+    "2.3.3",
+    "2.4.1",
+    "2.4.3",
+    "2.4.6",
+    "2.4.7",
+    "2.4.10",
+    "2.5.1",
+    "2.5.3",
+    "2.5.6",
+    "2.5.7",
+    "2.5.8",
+    "3.2.2",
+    "3.3.1",
+    "3.3.2",
+    "3.3.3",
+    "3.3.7",
+    "3.3.8",
+    "4.1.2"
+  ],
+  "confidence_score": 0.77,
+  "details": [
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 21,
+          "column": 6,
+          "index": 539
+        },
+        "end": {
+          "line": 89,
+          "column": 12,
+          "index": 2949
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h2",
+      "loc": {
+        "start": {
+          "line": 22,
+          "column": 8,
+          "index": 581
+        },
+        "end": {
+          "line": 22,
+          "column": 27,
+          "index": 600
+        }
+      },
+      "reasoning": "Structural element or landmark: h2 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 23,
+          "column": 8,
+          "index": 610
+        },
+        "end": {
+          "line": 33,
+          "column": 14,
+          "index": 1169
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 34,
+          "column": 8,
+          "index": 1179
+        },
+        "end": {
+          "line": 88,
+          "column": 14,
+          "index": 2935
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 35,
+          "column": 10,
+          "index": 1220
+        },
+        "end": {
+          "line": 60,
+          "column": 16,
+          "index": 2015
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 36,
+          "column": 12,
+          "index": 1266
+        },
+        "end": {
+          "line": 47,
+          "column": 18,
+          "index": 1627
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h3",
+      "loc": {
+        "start": {
+          "line": 37,
+          "column": 14,
+          "index": 1307
+        },
+        "end": {
+          "line": 37,
+          "column": 38,
+          "index": 1331
+        }
+      },
+      "reasoning": "Structural element or landmark: h3 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 48,
+          "column": 12,
+          "index": 1641
+        },
+        "end": {
+          "line": 59,
+          "column": 18,
+          "index": 1997
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h3",
+      "loc": {
+        "start": {
+          "line": 49,
+          "column": 14,
+          "index": 1682
+        },
+        "end": {
+          "line": 49,
+          "column": 37,
+          "index": 1705
+        }
+      },
+      "reasoning": "Structural element or landmark: h3 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "PRESENTATION_SURFACE",
+      "element": "div",
+      "loc": {
+        "start": {
+          "line": 61,
+          "column": 10,
+          "index": 2027
+        },
+        "end": {
+          "line": 87,
+          "column": 16,
+          "index": 2919
+        }
+      },
+      "reasoning": "Presentation details found: tag=div, role=, style/class=true",
+      "sc": [
+        "1.4.3",
+        "1.4.6",
+        "1.4.10",
+        "1.4.11",
+        "1.4.12",
+        "2.2.2",
+        "2.3.3",
+        "2.5.8"
+      ]
+    },
+    {
+      "category": "STRUCTURE_SURFACE",
+      "element": "h3",
+      "loc": {
+        "start": {
+          "line": 62,
+          "column": 12,
+          "index": 2070
+        },
+        "end": {
+          "line": 62,
+          "column": 33,
+          "index": 2091
+        }
+      },
+      "reasoning": "Structural element or landmark: h3 | role: ",
+      "sc": [
+        "1.3.1",
+        "2.4.1",
+        "2.4.6",
+        "2.4.10"
+      ]
+    },
+    {
+      "category": "FORM_INPUT_SURFACE",
+      "element": "input",
+      "loc": {
+        "start": {
+          "line": 64,
+          "column": 14,
+          "index": 2151
+        },
+        "end": {
+          "line": 70,
+          "column": 16,
+          "index": 2357
+        }
+      },
+      "reasoning": "Form control tag or role: input | role: ",
+      "sc": [
+        "1.3.1",
+        "3.3.1",
+        "3.3.2",
+        "3.3.3",
+        "3.3.7",
+        "3.3.8",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "FORM_INPUT_SURFACE",
+      "element": "input",
+      "loc": {
+        "start": {
+          "line": 71,
+          "column": 14,
+          "index": 2373
+        },
+        "end": {
+          "line": 77,
+          "column": 16,
+          "index": 2591
+        }
+      },
+      "reasoning": "Form control tag or role: input | role: ",
+      "sc": [
+        "1.3.1",
+        "3.3.1",
+        "3.3.2",
+        "3.3.3",
+        "3.3.7",
+        "3.3.8",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "FORM_INPUT_SURFACE",
+      "element": "textarea",
+      "loc": {
+        "start": {
+          "line": 78,
+          "column": 14,
+          "index": 2607
+        },
+        "end": {
+          "line": 84,
+          "column": 16,
+          "index": 2827
+        }
+      },
+      "reasoning": "Form control tag or role: textarea | role: ",
+      "sc": [
+        "1.3.1",
+        "3.3.1",
+        "3.3.2",
+        "3.3.3",
+        "3.3.7",
+        "3.3.8",
+        "4.1.2"
+      ]
+    },
+    {
+      "category": "INTERACTIVE_CONTROL_SURFACE",
+      "element": "button",
+      "loc": {
+        "start": {
+          "line": 85,
+          "column": 14,
+          "index": 2843
+        },
+        "end": {
+          "line": 85,
+          "column": 51,
+          "index": 2880
+        }
+      },
+      "reasoning": "Interactive signals detected: tag=button, role=, events=[]",
+      "sc": [
+        "2.1.1",
+        "2.1.2",
+        "2.4.3",
+        "2.4.7",
+        "2.5.1",
+        "2.5.3",
+        "2.5.6",
+        "2.5.7",
+        "2.5.8",
+        "3.2.2",
+        "4.1.2"
+      ]
+    }
+  ]
+}
