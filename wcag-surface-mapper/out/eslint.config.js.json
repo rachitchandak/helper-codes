@@ -1,0 +1,15 @@
+{
+  "file": "C:\\Users\\rachi\\OneDrive\\Desktop\\demo-site\\eslint.config.js",
+  "detected_surfaces": [],
+  "potential_wcag_sc": [],
+  "requires_runtime_validation": [],
+  "confidence_score": 1,
+  "details": [
+    {
+      "runtime_validation_completed": {
+        "msg": "Runtime validation skipped for non-HTML/built sources.",
+        "target": "C:\\Users\\rachi\\OneDrive\\Desktop\\demo-site\\eslint.config.js"
+      }
+    }
+  ]
+}
