@@ -17,14 +17,6 @@ import { getAccessibilityPrompt } from "./knowledgebase.js";
 // Azure OpenAI Configuration
 // ---------------------------------------------------------------------------
 
-const AZURE_CONFIG = {
-  azureOpenAIApiKey:
-    "",
-  azureOpenAIApiInstanceName: "",
-  azureOpenAIApiDeploymentName: "gpt-4o",
-  azureOpenAIApiVersion: "2024-08-01-preview",
-};
-
 // ---------------------------------------------------------------------------
 // Structured Output Schema — defines the JSON the agent must produce
 // ---------------------------------------------------------------------------
