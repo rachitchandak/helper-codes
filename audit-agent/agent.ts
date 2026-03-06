@@ -19,8 +19,8 @@ import { getAccessibilityPrompt } from "./knowledgebase.js";
 
 const AZURE_CONFIG = {
   azureOpenAIApiKey:
-    "BMnLqzun2vpeAAxx4P95sKJND31hGejLauqID6pwgWqWONZNxNcQJQQJ99BIACYeBjFXJ3w3AAABACOG3jDa",
-  azureOpenAIApiInstanceName: "ots-openai",
+    "",
+  azureOpenAIApiInstanceName: "",
   azureOpenAIApiDeploymentName: "gpt-4o",
   azureOpenAIApiVersion: "2024-08-01-preview",
 };
