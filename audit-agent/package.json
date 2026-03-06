@@ -1,0 +1,22 @@
+{
+  "name": "accessibility-audit-agent",
+  "version": "1.0.0",
+  "description": "An agentic accessibility auditor built with LangChain's createAgent",
+  "type": "module",
+  "scripts": {
+    "audit": "tsx index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.1.31",
+    "@langchain/langgraph": "^1.2.0",
+    "@langchain/openai": "^1.2.12",
+    "langchain": "^1.2.30",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

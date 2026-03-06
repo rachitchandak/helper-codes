@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-size: 12px; color: #999; background: #fff; }
+        a:focus { outline: none; }
+        .btn { padding: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav">
+            <a href="/home">click here</a>
+            <a href="/about">read more</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Welcome</h1>
+        <h3>About Us</h3>
+
+        <img src="logo.png">
+        <img src="banner.jpg">
+
+        <form>
+            <input type="text" id="name">
+            <input type="email" id="email">
+            <select id="country">
+                <option>USA</option>
+                <option>UK</option>
+            </select>
+            <div onclick="submit()" tabindex="5">Submit</div>
+        </form>
+
+        <video src="intro.mp4" autoplay></video>
+
+        <div role="button" aria-pressed="maybe">Toggle</div>
+
+        <div class="footer">
+            <p>Copyright 2024</p>
+        </div>
+    </div>
+</body>
+</html>
