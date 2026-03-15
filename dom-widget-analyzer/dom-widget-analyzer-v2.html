@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOM Widget Analyzer v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f0f13;color:#e2e2e8;min-height:100vh;font-size:13px;line-height:1.5}
+code,pre,textarea{font-family:'JetBrains Mono','Fira Code',monospace}
+
+.header{background:#0a0a0e;border-bottom:1px solid #1e1e2e;padding:1.1rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.logo-icon{width:30px;height:30px;background:#7c6af7;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.logo h1{font-size:14px;font-weight:600;color:#e2e2e8}
+.logo p{font-size:11px;color:#5a5a6a}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;border:1px solid}
+.bv{background:#1a1a2e;color:#7c6af7;border-color:#2a2a4a}
+.main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 62px)}
+
+/* tier legend in header */
+.tier-legend{display:flex;gap:10px;align-items:center;border-left:1px solid #1e1e2e;margin-left:8px;padding-left:12px}
+.tl{display:flex;align-items:center;gap:4px;font-size:10px;color:#6b6b7b}
+.tl-dot{width:7px;height:7px;border-radius:50%}
+.td-aria{background:#7c6af7}.td-semantic{background:#3bbc8e}.td-heuristic{background:#f0c040}.td-structural{background:#e07860}
+
+/* panels */
+.panel-left{border-right:1px solid #1e1e2e;display:flex;flex-direction:column;background:#0a0a0e}
+.panel-right{display:flex;flex-direction:column;overflow:hidden}
+.panel-bar{padding:10px 14px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;gap:8px;background:#0d0d18;flex-shrink:0}
+.panel-label{font-size:10px;font-weight:700;color:#4a4a5a;text-transform:uppercase;letter-spacing:1px;flex:1}
+.btn-row{display:flex;gap:5px}
+
+button{cursor:pointer;border:none;outline:none;font:inherit}
+.btn{background:#1a1a2e;color:#8a8a9a;border:1px solid #2a2a3a;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;transition:all .12s}
+.btn:hover{background:#232340;color:#c2c2d2}
+.btn-go{background:#7c6af7;color:#fff;border-color:#7c6af7;padding:5px 14px;font-size:12px;font-weight:600}
+.btn-go:hover{background:#9080ff}
+.btn-ghost{background:transparent;color:#5a5a6a;border:1px solid transparent;padding:4px 10px;border-radius:5px;font-size:11px}
+.btn-ghost:hover{background:#1a1a2e;color:#9b9bab;border-color:#2a2a3a}
+
+textarea{flex:1;background:#0a0a0e;color:#c8c8d8;border:none;resize:none;padding:14px;font-size:11.5px;line-height:1.75;outline:none;width:100%}
+textarea::placeholder{color:#2e2e3e}
+.panel-foot{padding:8px 14px;border-top:1px solid #1e1e2e;display:flex;align-items:center;gap:8px;background:#0d0d18}
+.charcount{font-size:10px;color:#3a3a4a;margin-left:auto}
+
+/* results */
+.results-scroll{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:#3a3a4a}
+.empty-icon{font-size:32px}
+.empty-state p{font-size:12px;text-align:center;max-width:200px;line-height:1.5;color:#4a4a5a}
+
+/* stats */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sc{background:#0d0d18;border:1px solid #1e1e2e;border-radius:7px;padding:9px 10px}
+.sc-n{font-size:18px;font-weight:700;line-height:1;margin-bottom:2px}
+.sc-l{font-size:9px;color:#4a4a5a;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.n-s{color:#7c6af7}.n-n{color:#3bbc8e}.n-i{color:#4f9ef8}.n-o{color:#f07a5a}
+
+/* filters */
+.filter-row{display:flex;gap:5px;flex-wrap:wrap;padding:4px 0}
+.fb{font-size:10px;padding:2px 9px;border-radius:99px;border:1px solid #2a2a3a;background:#1a1a2e;color:#5a5a6a;cursor:pointer;font-weight:600;transition:all .1s}
+.fb:hover{color:#9b9bab;border-color:#3a3a5a}
+.fb.on{color:#fff;border-color:transparent}
+.fb-all.on{background:#2a2a4a;color:#e2e2e8}
+.fb-structure.on{background:#2a1d5a;color:#b8aaff}
+.fb-nav.on{background:#0d2a1e;color:#5de4aa}
+.fb-input.on{background:#0d1e3a;color:#78b8ff}
+.fb-overlay.on{background:#2a1206;color:#f0aa78}
+
+/* tier filter row */
+.tier-filter{display:flex;gap:5px;align-items:center;padding:4px 0 2px}
+.tier-filter-label{font-size:9px;color:#3a3a4a;text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-right:2px}
+.tf{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid;cursor:pointer;font-weight:600;transition:all .1s;background:transparent}
+.tf-aria{color:#7c6af7;border-color:#2a2a4a}.tf-aria.on{background:#1a1030;border-color:#4a3a8a}
+.tf-semantic{color:#3bbc8e;border-color:#1a3a28}.tf-semantic.on{background:#0a2018;border-color:#2a6a48}
+.tf-heuristic{color:#f0c040;border-color:#3a2e00}.tf-heuristic.on{background:#1a1800;border-color:#6a5a00}
+.tf-structural{color:#e07860;border-color:#3a1e18}.tf-structural.on{background:#1a0e0a;border-color:#6a3828}
+
+/* widget card */
+.wcard{background:#0d0d18;border:1px solid #1e1e2e;border-radius:7px;overflow:hidden;transition:border-color .1s}
+.wcard:hover{border-color:#2a2a3a}
+.wcard[data-cat="structure"]{border-left:2px solid #4a3a8a}
+.wcard[data-cat="nav"]{border-left:2px solid #1a6a4a}
+.wcard[data-cat="input"]{border-left:2px solid #1a3a6a}
+.wcard[data-cat="overlay"]{border-left:2px solid #6a2a12}
+.card-hd{padding:9px 11px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.card-hd:hover{background:#101020}
+.card-name{font-size:12px;font-weight:600;color:#c2c2d2;flex:1}
+.card-cat-badge{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.cat-structure .card-cat-badge{background:#1a1030;color:#9a8aef;border:1px solid #2a1a5a}
+.cat-nav .card-cat-badge{background:#0a1e14;color:#4ac88a;border:1px solid #1a4a2a}
+.cat-input .card-cat-badge{background:#0a1428;color:#5898e8;border:1px solid #1a2a5a}
+.cat-overlay .card-cat-badge{background:#1e0a04;color:#d87848;border:1px solid #4a1a08}
+.card-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:#1a1a2e;color:#7c6af7;border:1px solid #2a2a4a;min-width:26px;text-align:center}
+.chevron{color:#2a2a3a;font-size:9px;transition:transform .12s}
+.chevron.open{transform:rotate(90deg)}
+.card-bd{border-top:1px solid #14141e;display:none}
+.card-bd.open{display:block}
+
+/* instance */
+.inst-list{max-height:320px;overflow-y:auto}
+.inst{padding:7px 11px;border-bottom:1px solid #101018;display:flex;flex-direction:column;gap:3px}
+.inst:last-child{border-bottom:none}
+.inst:hover{background:#080810}
+.inst-row1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.el-tag{font-size:10px;font-weight:700;background:#0d0a1e;color:#9a8aef;padding:0px 5px;border-radius:3px;font-family:monospace;border:1px solid #1e1a3e}
+.hint-text{font-size:11px;color:#6b6b7b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inst-row2{display:flex;gap:3px;flex-wrap:wrap}
+.attr-chip{font-size:9.5px;font-family:monospace;padding:0px 5px;border-radius:2px;background:#0d0d20;color:#6b8af7;border:1px solid #1a1a30;white-space:nowrap}
+.cls-chip{font-size:9.5px;padding:0px 5px;border-radius:2px;background:#0d1a0d;color:#4a9a5a;border:1px solid #1a2a1a;white-space:nowrap;font-family:monospace}
+.inst-text{font-size:10px;color:#3a3a4a;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.show-more{padding:6px;font-size:10px;color:#4f9ef8;cursor:pointer;text-align:center;border-top:1px solid #101018}
+.show-more:hover{background:#080810;color:#7cbdff}
+
+/* tier pill */
+.tier-pill{font-size:9px;padding:0px 5px;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.tp-aria{background:#1a1030;color:#9a8aef;border:1px solid #3a2a7a}
+.tp-semantic{background:#0a1e14;color:#3bbc8e;border:1px solid #1a4a2a}
+.tp-heuristic{background:#1a1800;color:#c8a030;border:1px solid #3a2e00}
+.tp-structural{background:#180a06;color:#c06848;border:1px solid #3a1a10}
+
+/* issues */
+.issue-warn{font-size:9px;padding:0px 5px;border-radius:3px;background:#1a1000;color:#c8a030;border:1px solid #3a2a00}
+.issue-info{font-size:9px;padding:0px 5px;border-radius:3px;background:#001224;color:#4f9ef8;border:1px solid #00244a}
+
+/* no-results */
+.no-results{text-align:center;padding:24px;font-size:12px;color:#4a4a5a}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#0a0a0e}
+::-webkit-scrollbar-thumb{background:#252535;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#353545}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-icon">⬡</div>
+  <div class="logo">
+    <h1>DOM Widget Analyzer <span style="font-size:10px;color:#4a4a5a;font-weight:400">v2</span></h1>
+    <p>3-tier detection · no ARIA required</p>
+  </div>
+  <div class="tier-legend">
+    <div class="tl"><div class="tl-dot td-aria"></div>ARIA role/attr</div>
+    <div class="tl"><div class="tl-dot td-semantic"></div>Semantic HTML</div>
+    <div class="tl"><div class="tl-dot td-heuristic"></div>Class / data attr</div>
+    <div class="tl"><div class="tl-dot td-structural"></div>DOM structure</div>
+  </div>
+  <div class="header-right">
+    <span class="badge bv">30 patterns</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT -->
+  <div class="panel-left">
+    <div class="panel-bar">
+      <span class="panel-label">HTML Input</span>
+      <div class="btn-row">
+        <button class="btn" onclick="loadSample('aria')">ARIA sample</button>
+        <button class="btn" onclick="loadSample('noaria')">No-ARIA sample</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+    <textarea id="hi" spellcheck="false" placeholder="Paste any HTML here — with or without ARIA attributes.
+
+Detection tiers (applied in order):
+① ARIA  — role=, aria-* attributes
+② Semantic — native HTML elements (nav, dialog, details, table…)
+③ Heuristic — class names, data-* attrs, framework patterns
+④ Structural — DOM nesting (ul>li>ul = tree, div>button+div = accordion…)
+
+Try 'No-ARIA sample' to see structure-only detection." oninput="updateCount()"></textarea>
+    <div class="panel-foot">
+      <button class="btn btn-go" onclick="run()">Analyze DOM →</button>
+      <span style="font-size:10px;color:#3a3a4a">⌘↵ to run</span>
+      <span class="charcount" id="cc">0 chars</span>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel-right">
+    <div class="panel-bar">
+      <span class="panel-label">Results</span>
+      <span id="rsummary" style="font-size:10px;color:#4a4a5a"></span>
+    </div>
+    <div class="results-scroll" id="rs">
+      <div class="empty-state" id="es">
+        <div class="empty-icon">⬡</div>
+        <p>Paste HTML and run analysis — or load a sample</p>
+      </div>
+      <div id="rc" style="display:none;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Tier constants ──────────────────────────────────────────────────────────
+const T = { ARIA:'aria', SEM:'semantic', HEUR:'heuristic', STRUCT:'structural' };
+
+// ─── Widget definitions ──────────────────────────────────────────────────────
+// Each rule: { sel, tier, hint }
+// custom:true uses a dedicated JS detector function
+const WIDGETS = [
+{id:'accordion', name:'Accordion', cat:'structure', rules:[
+  {sel:'details',                                    tier:T.SEM,   hint:'Native <details> element'},
+  {sel:'button[aria-expanded][aria-controls]',       tier:T.ARIA,  hint:'ARIA accordion trigger'},
+  {sel:'[role="region"][aria-labelledby]',           tier:T.ARIA,  hint:'ARIA accordion panel'},
+  {sel:'[class*="accordion"]',                       tier:T.HEUR,  hint:'Accordion class name'},
+  {sel:'[class*="collapse"]:not(table)',             tier:T.HEUR,  hint:'Collapse class (Bootstrap)'},
+  {sel:'[data-toggle="collapse"]',                   tier:T.HEUR,  hint:'Bootstrap 4 collapse toggle'},
+  {sel:'[data-bs-toggle="collapse"]',                tier:T.HEUR,  hint:'Bootstrap 5 collapse toggle'},
+  {sel:'[class*="Accordion"]',                       tier:T.HEUR,  hint:'React/component accordion class'},
+]},
+{id:'alert', name:'Alert / Banner', cat:'overlay', rules:[
+  {sel:'[role="alert"]',                             tier:T.ARIA,  hint:'ARIA alert (assertive live)'},
+  {sel:'[role="status"]',                            tier:T.ARIA,  hint:'ARIA status (polite live)'},
+  {sel:'[aria-live="assertive"]',                    tier:T.ARIA,  hint:'Assertive live region'},
+  {sel:'[aria-live="polite"]',                       tier:T.ARIA,  hint:'Polite live region'},
+  {sel:'[class*="alert"]:not(script)',               tier:T.HEUR,  hint:'Alert class name'},
+  {sel:'[class*="notification"]',                    tier:T.HEUR,  hint:'Notification class'},
+  {sel:'[class*="toast"]',                           tier:T.HEUR,  hint:'Toast notification class'},
+  {sel:'[class*="snackbar"]',                        tier:T.HEUR,  hint:'Snackbar class (Material)'},
+  {sel:'[class*="banner"]:not(header)',              tier:T.HEUR,  hint:'Banner/announcement class'},
+]},
+{id:'alertdialog', name:'Alert dialog', cat:'overlay', rules:[
+  {sel:'[role="alertdialog"]',                       tier:T.ARIA,  hint:'ARIA alertdialog'},
+  {sel:'[class*="confirm-dialog"]',                  tier:T.HEUR,  hint:'Confirm dialog class'},
+  {sel:'[class*="confirm"][class*="modal"]',         tier:T.HEUR,  hint:'Confirm modal class'},
+]},
+{id:'breadcrumb', name:'Breadcrumb', cat:'nav', rules:[
+  {sel:'[aria-label*="breadcrumb" i]',               tier:T.ARIA,  hint:'Breadcrumb via aria-label'},
+  {sel:'[aria-label*="you are here" i]',             tier:T.ARIA,  hint:'Breadcrumb location marker'},
+  {sel:'[class*="breadcrumb"]',                      tier:T.HEUR,  hint:'Breadcrumb class name'},
+  {sel:'[class*="crumb"]',                           tier:T.HEUR,  hint:'Crumb class name'},
+  {sel:'[itemtype*="BreadcrumbList"]',               tier:T.HEUR,  hint:'Schema.org BreadcrumbList'},
+  {sel:'nav ol a ~ a, nav ol li ~ li',               tier:T.STRUCT,hint:'Ordered list inside nav (breadcrumb pattern)'},
+]},
+{id:'button', name:'Button', cat:'input', rules:[
+  {sel:'button',                                     tier:T.SEM,   hint:'Native <button>'},
+  {sel:'[role="button"]',                            tier:T.ARIA,  hint:'ARIA button role'},
+  {sel:'input[type="button"]',                       tier:T.SEM,   hint:'Input[type=button]'},
+  {sel:'input[type="submit"]',                       tier:T.SEM,   hint:'Submit button'},
+  {sel:'input[type="reset"]',                        tier:T.SEM,   hint:'Reset button'},
+  {sel:'a[class*="btn"]:not([role])',                tier:T.HEUR,  hint:'Anchor styled as button (.btn)'},
+  {sel:'[class*="button"]:not(button):not([role])',  tier:T.HEUR,  hint:'Non-button with button class'},
+]},
+{id:'carousel', name:'Carousel', cat:'structure', rules:[
+  {sel:'[aria-roledescription*="carousel" i]',       tier:T.ARIA,  hint:'ARIA carousel roledescription'},
+  {sel:'[role="region"][aria-label*="carousel" i]',  tier:T.ARIA,  hint:'Carousel region'},
+  {sel:'[class*="carousel"]',                        tier:T.HEUR,  hint:'Carousel class name'},
+  {sel:'[class*="slideshow"]',                       tier:T.HEUR,  hint:'Slideshow class'},
+  {sel:'[class*="swiper"]',                          tier:T.HEUR,  hint:'Swiper.js carousel'},
+  {sel:'.slick-slider',                              tier:T.HEUR,  hint:'Slick carousel'},
+  {sel:'[data-bs-ride="carousel"]',                  tier:T.HEUR,  hint:'Bootstrap 5 carousel'},
+  {sel:'[data-ride="carousel"]',                     tier:T.HEUR,  hint:'Bootstrap 4 carousel'},
+  {sel:'[class*="slider-track"]',                    tier:T.HEUR,  hint:'Slider track (carousel)'},
+]},
+{id:'checkbox', name:'Checkbox', cat:'input', rules:[
+  {sel:'input[type="checkbox"]',                     tier:T.SEM,   hint:'Native checkbox'},
+  {sel:'[role="checkbox"]',                          tier:T.ARIA,  hint:'ARIA checkbox role'},
+]},
+{id:'combobox', name:'Combobox', cat:'input', rules:[
+  {sel:'[role="combobox"]',                          tier:T.ARIA,  hint:'ARIA combobox'},
+  {sel:'input[list]',                                tier:T.SEM,   hint:'Native datalist combobox'},
+  {sel:'input[aria-autocomplete]',                   tier:T.ARIA,  hint:'Autocomplete input'},
+  {sel:'input[aria-haspopup]',                       tier:T.ARIA,  hint:'Input with popup'},
+  {sel:'[class*="combobox"]',                        tier:T.HEUR,  hint:'Combobox class'},
+  {sel:'[class*="autocomplete"]',                    tier:T.HEUR,  hint:'Autocomplete class'},
+  {sel:'[class*="typeahead"]',                       tier:T.HEUR,  hint:'Typeahead class'},
+  {sel:'[class*="autosuggest"]',                     tier:T.HEUR,  hint:'Autosuggest class'},
+  {sel:'[data-tippy-content]',                       tier:T.HEUR,  hint:'Tippy-powered dropdown'},
+]},
+{id:'dialog', name:'Dialog (modal)', cat:'overlay', rules:[
+  {sel:'dialog',                                     tier:T.SEM,   hint:'Native <dialog> element'},
+  {sel:'[role="dialog"]',                            tier:T.ARIA,  hint:'ARIA dialog'},
+  {sel:'[aria-modal="true"]',                        tier:T.ARIA,  hint:'aria-modal attribute'},
+  {sel:'[class*="modal"]:not([class*="modal-item"]):not([class*="modal-content"])', tier:T.HEUR, hint:'Modal class'},
+  {sel:'[class*="dialog"]:not(dialog)',              tier:T.HEUR,  hint:'Dialog class'},
+  {sel:'[class*="lightbox"]',                        tier:T.HEUR,  hint:'Lightbox overlay class'},
+  {sel:'[class*="overlay"][class*="active"]',        tier:T.HEUR,  hint:'Active overlay class'},
+  {sel:'[class*="popup"]:not([data-tooltip])',       tier:T.HEUR,  hint:'Popup/modal class'},
+]},
+{id:'disclosure', name:'Disclosure (show/hide)', cat:'structure', rules:[
+  {sel:'summary',                                    tier:T.SEM,   hint:'Native <summary> trigger'},
+  {sel:'button[aria-expanded]:not([aria-controls])', tier:T.ARIA,  hint:'Disclosure trigger (no controls)'},
+  {sel:'[aria-expanded][aria-pressed]',              tier:T.ARIA,  hint:'Toggle/disclosure button'},
+  {sel:'[data-toggle]:not([data-toggle="tooltip"]):not([data-toggle="collapse"])', tier:T.HEUR, hint:'Toggle via data-toggle'},
+  {sel:'[class*="toggle-btn"]',                      tier:T.HEUR,  hint:'Toggle button class'},
+  {sel:'[class*="show-hide"]',                       tier:T.HEUR,  hint:'Show/hide trigger class'},
+]},
+{id:'feed', name:'Feed', cat:'structure', rules:[
+  {sel:'[role="feed"]',                              tier:T.ARIA,  hint:'ARIA feed container'},
+  {sel:'[role="article"]',                           tier:T.ARIA,  hint:'ARIA article in feed'},
+  {sel:'article',                                    tier:T.SEM,   hint:'Native <article> element'},
+  {sel:'[class*="feed"]',                            tier:T.HEUR,  hint:'Feed class name'},
+  {sel:'[class*="timeline"]',                        tier:T.HEUR,  hint:'Timeline/activity feed class'},
+  {sel:'[class*="post-list"]',                       tier:T.HEUR,  hint:'Post list class'},
+]},
+{id:'grid', name:'Grid', cat:'structure', rules:[
+  {sel:'[role="grid"]',                              tier:T.ARIA,  hint:'ARIA grid container'},
+  {sel:'[role="gridcell"]',                          tier:T.ARIA,  hint:'ARIA grid cell'},
+  {sel:'[role="columnheader"]',                      tier:T.ARIA,  hint:'Grid column header'},
+  {sel:'[role="rowheader"]',                         tier:T.ARIA,  hint:'Grid row header'},
+  {sel:'[class*="data-grid"]',                       tier:T.HEUR,  hint:'Data grid class'},
+  {sel:'[class*="datagrid"]',                        tier:T.HEUR,  hint:'DataGrid class'},
+  {sel:'[class*="ag-grid"]',                         tier:T.HEUR,  hint:'AG Grid class'},
+  {sel:'[class*="handsontable"]',                    tier:T.HEUR,  hint:'Handsontable class'},
+  {sel:'[class*="spreadsheet"]',                     tier:T.HEUR,  hint:'Spreadsheet class'},
+]},
+{id:'landmark', name:'Landmark', cat:'structure', rules:[
+  {sel:'header',                                     tier:T.SEM,   hint:'Page header landmark'},
+  {sel:'nav',                                        tier:T.SEM,   hint:'Navigation landmark'},
+  {sel:'main',                                       tier:T.SEM,   hint:'Main content landmark'},
+  {sel:'aside',                                      tier:T.SEM,   hint:'Complementary landmark'},
+  {sel:'footer',                                     tier:T.SEM,   hint:'Content info landmark'},
+  {sel:'[role="banner"]',                            tier:T.ARIA,  hint:'Banner landmark'},
+  {sel:'[role="navigation"]',                        tier:T.ARIA,  hint:'Navigation landmark'},
+  {sel:'[role="main"]',                              tier:T.ARIA,  hint:'Main landmark'},
+  {sel:'[role="complementary"]',                     tier:T.ARIA,  hint:'Complementary landmark'},
+  {sel:'[role="contentinfo"]',                       tier:T.ARIA,  hint:'Content info landmark'},
+  {sel:'[role="search"]',                            tier:T.ARIA,  hint:'Search landmark'},
+  {sel:'[role="form"]',                              tier:T.ARIA,  hint:'Form landmark'},
+  {sel:'section[aria-label], section[aria-labelledby]', tier:T.ARIA, hint:'Named section landmark'},
+]},
+{id:'link', name:'Link', cat:'nav', rules:[
+  {sel:'a[href]',                                    tier:T.SEM,   hint:'Native anchor link'},
+  {sel:'[role="link"]',                              tier:T.ARIA,  hint:'ARIA link role'},
+  {sel:'a[aria-current]',                            tier:T.ARIA,  hint:'Current-page link'},
+  {sel:'a[href="#"]:not([onclick])',                 tier:T.STRUCT, hint:'Likely placeholder link (href="#")'},
+]},
+{id:'listbox', name:'Listbox', cat:'input', rules:[
+  {sel:'[role="listbox"]',                           tier:T.ARIA,  hint:'ARIA listbox container'},
+  {sel:'[role="option"]',                            tier:T.ARIA,  hint:'ARIA option item'},
+  {sel:'select',                                     tier:T.SEM,   hint:'Native <select> element'},
+  {sel:'select[multiple]',                           tier:T.SEM,   hint:'Multi-select listbox'},
+  {sel:'[class*="listbox"]',                         tier:T.HEUR,  hint:'Listbox class'},
+  {sel:'[class*="select-list"]',                     tier:T.HEUR,  hint:'Select list class'},
+]},
+{id:'menu', name:'Menu / Menubar', cat:'overlay', rules:[
+  {sel:'[role="menu"]',                              tier:T.ARIA,  hint:'ARIA menu'},
+  {sel:'[role="menubar"]',                           tier:T.ARIA,  hint:'ARIA menubar'},
+  {sel:'[role="menuitem"]',                          tier:T.ARIA,  hint:'ARIA menu item'},
+  {sel:'[role="menuitemcheckbox"]',                  tier:T.ARIA,  hint:'ARIA checkable menu item'},
+  {sel:'[role="menuitemradio"]',                     tier:T.ARIA,  hint:'ARIA radio menu item'},
+  {sel:'[class*="dropdown-menu"]',                   tier:T.HEUR,  hint:'Dropdown menu class (Bootstrap)'},
+  {sel:'[class*="context-menu"]',                    tier:T.HEUR,  hint:'Context menu class'},
+  {sel:'[class*="nav-menu"]',                        tier:T.HEUR,  hint:'Navigation menu class'},
+  {sel:'nav > ul[class*="menu"]',                    tier:T.HEUR,  hint:'Nav menu list'},
+]},
+{id:'menubutton', name:'Menu button', cat:'overlay', rules:[
+  {sel:'button[aria-haspopup="menu"]',               tier:T.ARIA,  hint:'Button → menu'},
+  {sel:'button[aria-haspopup="true"]',               tier:T.ARIA,  hint:'Button → popup'},
+  {sel:'[aria-haspopup="listbox"]',                  tier:T.ARIA,  hint:'Button → listbox'},
+  {sel:'[aria-haspopup="dialog"]',                   tier:T.ARIA,  hint:'Button → dialog'},
+  {sel:'[class*="dropdown-toggle"]',                 tier:T.HEUR,  hint:'Bootstrap dropdown toggle'},
+  {sel:'[data-bs-toggle="dropdown"]',                tier:T.HEUR,  hint:'Bootstrap 5 dropdown toggle'},
+  {sel:'[data-toggle="dropdown"]',                   tier:T.HEUR,  hint:'Bootstrap 4 dropdown toggle'},
+]},
+{id:'meter', name:'Meter', cat:'input', rules:[
+  {sel:'meter',                                      tier:T.SEM,   hint:'Native <meter> element'},
+  {sel:'[role="meter"]',                             tier:T.ARIA,  hint:'ARIA meter role'},
+  {sel:'progress',                                   tier:T.SEM,   hint:'Native <progress> element'},
+  {sel:'[class*="meter"]',                           tier:T.HEUR,  hint:'Meter class'},
+  {sel:'[class*="gauge"]',                           tier:T.HEUR,  hint:'Gauge/meter class'},
+  {sel:'[class*="progress-bar"]',                    tier:T.HEUR,  hint:'Progress bar class'},
+  {sel:'[class*="progress"][role]',                  tier:T.HEUR,  hint:'Progress with explicit role'},
+]},
+{id:'radiogroup', name:'Radio group', cat:'input', rules:[
+  {sel:'[role="radiogroup"]',                        tier:T.ARIA,  hint:'ARIA radiogroup container'},
+  {sel:'[role="radio"]',                             tier:T.ARIA,  hint:'ARIA radio button'},
+  {sel:'input[type="radio"]',                        tier:T.SEM,   hint:'Native radio input'},
+  {sel:'fieldset',                                   tier:T.SEM,   hint:'Fieldset group (likely radio/checkbox)'},
+  {sel:'[class*="radio-group"]',                     tier:T.HEUR,  hint:'Radio group class'},
+]},
+{id:'slider', name:'Slider', cat:'input', rules:[
+  {sel:'input[type="range"]',                        tier:T.SEM,   hint:'Native range input'},
+  {sel:'[role="slider"]',                            tier:T.ARIA,  hint:'ARIA slider'},
+  {sel:'[class*="range-slider"]',                    tier:T.HEUR,  hint:'Range slider class'},
+  {sel:'[class*="noUi-handle"]',                     tier:T.HEUR,  hint:'noUiSlider handle'},
+  {sel:'[class*="rc-slider"]',                       tier:T.HEUR,  hint:'React RC Slider'},
+]},
+{id:'multislider', name:'Slider (multi-thumb)', cat:'input', custom:true},
+{id:'spinbutton', name:'Spinbutton', cat:'input', rules:[
+  {sel:'[role="spinbutton"]',                        tier:T.ARIA,  hint:'ARIA spinbutton'},
+  {sel:'input[type="number"]',                       tier:T.SEM,   hint:'Native number input'},
+  {sel:'[class*="spinbutton"]',                      tier:T.HEUR,  hint:'Spinbutton class'},
+  {sel:'[class*="number-input"]',                    tier:T.HEUR,  hint:'Number input class'},
+]},
+{id:'switch', name:'Switch', cat:'input', rules:[
+  {sel:'[role="switch"]',                            tier:T.ARIA,  hint:'ARIA switch role'},
+  {sel:'input[type="checkbox"][class*="switch"]',    tier:T.HEUR,  hint:'Checkbox styled as switch'},
+  {sel:'input[type="checkbox"][class*="toggle"]',    tier:T.HEUR,  hint:'Checkbox styled as toggle'},
+  {sel:'[class*="toggle-switch"]',                   tier:T.HEUR,  hint:'Toggle switch class'},
+  {sel:'[class*="form-switch"]',                     tier:T.HEUR,  hint:'Bootstrap form-switch'},
+  {sel:'label[class*="switch"] input[type="checkbox"]', tier:T.STRUCT, hint:'Checkbox inside switch label'},
+  {sel:'label[class*="toggle"] input[type="checkbox"]', tier:T.STRUCT, hint:'Checkbox inside toggle label'},
+]},
+{id:'table', name:'Table', cat:'structure', rules:[
+  {sel:'table',                                      tier:T.SEM,   hint:'Native <table> element'},
+  {sel:'[role="table"]',                             tier:T.ARIA,  hint:'ARIA table role'},
+  {sel:'[role="row"]',                               tier:T.ARIA,  hint:'ARIA row'},
+  {sel:'[role="cell"]',                              tier:T.ARIA,  hint:'ARIA cell'},
+  {sel:'[class*="data-table"]',                      tier:T.HEUR,  hint:'Data table class'},
+  {sel:'[class*="table-responsive"]',                tier:T.HEUR,  hint:'Bootstrap table wrapper'},
+  {sel:'[class*="MuiTable"]',                        tier:T.HEUR,  hint:'Material UI Table'},
+]},
+{id:'tabs', name:'Tabs', cat:'nav', rules:[
+  {sel:'[role="tablist"]',                           tier:T.ARIA,  hint:'ARIA tab list'},
+  {sel:'[role="tab"]',                               tier:T.ARIA,  hint:'ARIA tab button'},
+  {sel:'[role="tabpanel"]',                          tier:T.ARIA,  hint:'ARIA tab panel'},
+  {sel:'[class*="tab-list"]',                        tier:T.HEUR,  hint:'Tab list class'},
+  {sel:'[class*="tabs"]:not(input)',                 tier:T.HEUR,  hint:'Tabs container class'},
+  {sel:'[class*="tab-panel"]',                       tier:T.HEUR,  hint:'Tab panel class'},
+  {sel:'[class*="nav-tabs"]',                        tier:T.HEUR,  hint:'Bootstrap nav-tabs'},
+  {sel:'[data-tab], [data-tabs]',                    tier:T.HEUR,  hint:'Data-tab attribute'},
+]},
+{id:'toolbar', name:'Toolbar', cat:'nav', rules:[
+  {sel:'[role="toolbar"]',                           tier:T.ARIA,  hint:'ARIA toolbar'},
+  {sel:'[class*="toolbar"]',                         tier:T.HEUR,  hint:'Toolbar class name'},
+  {sel:'[class*="tool-bar"]',                        tier:T.HEUR,  hint:'Tool-bar class name'},
+  {sel:'[class*="action-bar"]',                      tier:T.HEUR,  hint:'Action bar class'},
+  {sel:'[class*="editor-toolbar"]',                  tier:T.HEUR,  hint:'Editor toolbar class'},
+]},
+{id:'tooltip', name:'Tooltip', cat:'overlay', rules:[
+  {sel:'[role="tooltip"]',                           tier:T.ARIA,  hint:'ARIA tooltip element'},
+  {sel:'[aria-describedby]',                         tier:T.ARIA,  hint:'Element with tooltip reference'},
+  {sel:'[title]:not(html):not(head):not(body):not(script):not(style):not(link)',
+                                                     tier:T.SEM,   hint:'HTML title attribute (native tooltip)'},
+  {sel:'[data-tooltip]',                             tier:T.HEUR,  hint:'data-tooltip attribute'},
+  {sel:'[data-bs-toggle="tooltip"]',                 tier:T.HEUR,  hint:'Bootstrap 5 tooltip'},
+  {sel:'[data-toggle="tooltip"]',                    tier:T.HEUR,  hint:'Bootstrap 4 tooltip'},
+  {sel:'[data-tippy-content]',                       tier:T.HEUR,  hint:'Tippy.js tooltip'},
+  {sel:'[class*="tooltip"]',                         tier:T.HEUR,  hint:'Tooltip class name'},
+]},
+{id:'treeview', name:'Tree view', cat:'structure', rules:[
+  {sel:'[role="tree"]',                              tier:T.ARIA,  hint:'ARIA tree container'},
+  {sel:'[role="treeitem"]',                          tier:T.ARIA,  hint:'ARIA tree item'},
+  {sel:'[class*="treeview"]',                        tier:T.HEUR,  hint:'Treeview class'},
+  {sel:'[class*="tree-view"]',                       tier:T.HEUR,  hint:'Tree-view class'},
+  {sel:'[class*="file-tree"]',                       tier:T.HEUR,  hint:'File tree class'},
+  {sel:'[class*="menu-tree"]',                       tier:T.HEUR,  hint:'Menu tree class'},
+]},
+{id:'treegrid', name:'Treegrid', cat:'structure', rules:[
+  {sel:'[role="treegrid"]',                          tier:T.ARIA,  hint:'ARIA treegrid'},
+  {sel:'[class*="treegrid"]',                        tier:T.HEUR,  hint:'Treegrid class'},
+]},
+{id:'windowsplitter', name:'Window splitter', cat:'structure', rules:[
+  {sel:'[role="separator"][aria-valuenow]',          tier:T.ARIA,  hint:'ARIA separator with value'},
+  {sel:'[role="separator"][aria-orientation]',       tier:T.ARIA,  hint:'ARIA separator with orientation'},
+  {sel:'[role="separator"][tabindex]',               tier:T.ARIA,  hint:'Focusable separator'},
+  {sel:'[class*="splitter"]',                        tier:T.HEUR,  hint:'Splitter class'},
+  {sel:'[class*="resizer"]',                         tier:T.HEUR,  hint:'Resizer/drag handle class'},
+  {sel:'[class*="gutter"]',                          tier:T.HEUR,  hint:'Split.js gutter class'},
+  {sel:'[class*="divider"][draggable]',              tier:T.HEUR,  hint:'Draggable divider'},
+]},
+];
+
+const CATS = {structure:'Structure', nav:'Navigation', input:'Input', overlay:'Overlay'};
+
+// ─── Structural (pattern-based) detectors ────────────────────────────────────
+function structuralDetectors(doc) {
+  const extra = []; // {widgetId, instances:[]}
+
+  // 1. Nested list → Tree view candidate
+  // ul/ol containing li that itself contains ul/ol (depth ≥ 2)
+  const nestedListParents = new Set();
+  doc.querySelectorAll('ul > li > ul, ul > li > ol, ol > li > ul, ol > li > ol').forEach(inner => {
+    const parentList = inner.closest('ul, ol');
+    if (parentList && !parentList.closest('[role="tree"]') && !parentList.closest('[class*="tree"]'))
+      nestedListParents.add(parentList);
+  });
+  if (nestedListParents.size) {
+    extra.push({ widgetId:'treeview', instances:[...nestedListParents].map(el => ({
+      el, tier:T.STRUCT, hint:'Nested list (ul>li>ul) — potential tree view', selector:'ul>li>ul / ol>li>ol'
+    }))});
+  }
+
+  // 2. Nav > ul > li structure → navigation menu / breadcrumb
+  const navLists = [...doc.querySelectorAll('nav > ul, nav > ol')].filter(ul => {
+    return !ul.closest('[aria-label*="breadcrumb" i]') && !ul.closest('[class*="breadcrumb"]');
+  });
+  if (navLists.length) {
+    extra.push({ widgetId:'menu', instances: navLists.map(el => ({
+      el, tier:T.STRUCT, hint:'Nav list (nav>ul) — navigation menu pattern', selector:'nav>ul/ol'
+    }))});
+  }
+
+  // 3. Button + immediately following sibling div/section → disclosure or accordion
+  const disclosurePairs = [];
+  doc.querySelectorAll('button + div, button + section').forEach(sibling => {
+    const btn = sibling.previousElementSibling;
+    if (btn && btn.tagName === 'BUTTON' && !btn.hasAttribute('aria-expanded') && !btn.hasAttribute('aria-haspopup')) {
+      const hasHide = sibling.hasAttribute('hidden') || sibling.style.display === 'none';
+      disclosurePairs.push({ el: btn, tier:T.STRUCT,
+        hint: `button + ${sibling.tagName.toLowerCase()} sibling — potential disclosure`, selector:'button+div/section'
+      });
+    }
+  });
+  if (disclosurePairs.length) extra.push({ widgetId:'disclosure', instances: disclosurePairs });
+
+  // 4. ul/ol directly inside div/section (no semantic role) → list widget / listbox candidate
+  const plainLists = [];
+  doc.querySelectorAll('div > ul, section > ul, div > ol, section > ol').forEach(list => {
+    if (list.closest('[role]')) return; // skip if already has ARIA context
+    if (list.closest('nav')) return;
+    if (list.closest('[class*="breadcrumb"]')) return;
+    const lis = list.querySelectorAll('li');
+    if (lis.length >= 2 && lis.length <= 30) {
+      plainLists.push({ el: list, tier:T.STRUCT,
+        hint:`List (${list.tagName.toLowerCase()}) inside div/section — possible listbox or menu`, selector:'div>ul/ol'
+      });
+    }
+  });
+  if (plainLists.length) extra.push({ widgetId:'listbox', instances: plainLists });
+
+  // 5. dl > dt + dd pattern → description list / accordion-like
+  const dls = [...doc.querySelectorAll('dl')];
+  if (dls.length) {
+    extra.push({ widgetId:'accordion', instances: dls.map(el => ({
+      el, tier:T.STRUCT, hint:'<dl> (description list) — potential accordion/FAQ pattern', selector:'dl'
+    }))});
+  }
+
+  // 6. form > label + input groups → form landmark / radio group
+  const formGroups = new Set();
+  doc.querySelectorAll('label + input[type="radio"], label + input[type="checkbox"]').forEach(inp => {
+    const parent = inp.parentElement;
+    if (parent) formGroups.add(parent);
+  });
+  if (formGroups.size) {
+    extra.push({ widgetId:'radiogroup', instances: [...formGroups].map(el => ({
+      el, tier:T.STRUCT, hint:'label+input group without fieldset — potential radio/checkbox group', selector:'label+input[radio/checkbox]'
+    }))});
+  }
+
+  // 7. div/section with multiple peer child divs each having img+p → feed / card list
+  const cardLists = [];
+  doc.querySelectorAll('div, section, ul').forEach(parent => {
+    const children = [...parent.children];
+    if (children.length < 2 || children.length > 20) return;
+    const isCardLike = children.every(c =>
+      (c.tagName === 'DIV' || c.tagName === 'LI' || c.tagName === 'ARTICLE') &&
+      c.querySelector('img, picture') && c.querySelector('p, span, h2, h3, h4')
+    );
+    if (isCardLike && !parent.closest('[role]') && !parent.closest('[class*="carousel"]')) {
+      cardLists.push({ el: parent, tier:T.STRUCT,
+        hint:`${parent.tagName.toLowerCase()} with ${children.length} card-like children (img+text) — feed or card list`, selector:'div>div(img+text)'
+      });
+    }
+  });
+  if (cardLists.length) extra.push({ widgetId:'feed', instances: cardLists });
+
+  // 8. header > nav structure
+  const headerNavs = [...doc.querySelectorAll('header > nav, header nav')];
+  if (headerNavs.length) {
+    extra.push({ widgetId:'landmark', instances: headerNavs.map(el => ({
+      el, tier:T.STRUCT, hint:'<nav> inside <header> — site navigation pattern', selector:'header>nav'
+    }))});
+  }
+
+  // 9. div[id] + corresponding div (tab panel pattern without roles)
+  const idDivs = [...doc.querySelectorAll('div[id], section[id]')];
+  const linkedFrom = new Set();
+  doc.querySelectorAll('a[href^="#"], button[data-target], [data-bs-target]').forEach(trigger => {
+    const ref = (trigger.getAttribute('href') || trigger.getAttribute('data-target') || trigger.getAttribute('data-bs-target') || '').replace('#','');
+    if (ref) linkedFrom.add(ref);
+  });
+  const panelCandidates = idDivs.filter(el => linkedFrom.has(el.id) && !el.getAttribute('role'));
+  if (panelCandidates.length >= 2) {
+    extra.push({ widgetId:'tabs', instances: panelCandidates.map(el => ({
+      el, tier:T.STRUCT, hint:`div#${el.id} targeted by anchor — possible tab panel`, selector:'div[id] targeted by a[href=#id]'
+    }))});
+  }
+
+  // 10. input[type=checkbox] inside label without role=switch — possible switch if sibling spans exist
+  doc.querySelectorAll('label:not([class*="switch"]):not([class*="toggle"]) input[type="checkbox"]').forEach(inp => {
+    const label = inp.closest('label');
+    if (!label) return;
+    const spans = label.querySelectorAll('span');
+    if (spans.length >= 1 && !label.querySelector('[class*="checkbox"]')) {
+      extra.push({ widgetId:'switch', instances:[{ el:label, tier:T.STRUCT,
+        hint:'label > checkbox + span — visually might be a switch', selector:'label>input[checkbox]+span'
+      }]});
+    }
+  });
+
+  return extra;
+}
+
+// ─── Multi-thumb slider detector ─────────────────────────────────────────────
+function detectMultiThumb(doc) {
+  // ARIA-based
+  const ariaSliders = [...doc.querySelectorAll('[role="slider"]')];
+  const parentMap = new Map();
+  ariaSliders.forEach(s => {
+    const p = s.parentElement; if (!p) return;
+    if (!parentMap.has(p)) parentMap.set(p, []);
+    parentMap.get(p).push(s);
+  });
+  const instances = [];
+  parentMap.forEach((sliders, parent) => {
+    if (sliders.length >= 2) instances.push({ el:parent, tier:T.ARIA, issues:[],
+      hint:`Container with ${sliders.length} ARIA sliders — multi-thumb`, selector:'[role=slider]×'+sliders.length });
+  });
+  // Heuristic: 2 range inputs inside same parent
+  const rangeParents = new Map();
+  doc.querySelectorAll('input[type="range"]').forEach(r => {
+    const p = r.parentElement; if (!p) return;
+    if (!rangeParents.has(p)) rangeParents.set(p, []);
+    rangeParents.get(p).push(r);
+  });
+  rangeParents.forEach((ranges, parent) => {
+    if (ranges.length >= 2) instances.push({ el:parent, tier:T.HEUR, issues:[],
+      hint:`Parent with ${ranges.length} range inputs — multi-thumb slider`, selector:'input[range]×'+ranges.length });
+  });
+  // noUiSlider multi-handle
+  doc.querySelectorAll('[class*="noUi"][class*="connect"]').forEach(el => {
+    if (el.querySelectorAll('[class*="noUi-handle"]').length >= 2)
+      instances.push({ el, tier:T.HEUR, issues:[], hint:'noUiSlider with multiple handles', selector:'.noUi-connect' });
+  });
+  return instances;
+}
+
+// ─── Core detection ───────────────────────────────────────────────────────────
+function getDisplayAttrs(el) {
+  const keep = ['role','aria-label','aria-labelledby','aria-expanded','aria-haspopup','aria-controls',
+    'aria-selected','aria-checked','aria-pressed','aria-modal','aria-orientation','aria-valuenow',
+    'aria-autocomplete','aria-roledescription','aria-current','type','tabindex','data-toggle',
+    'data-bs-toggle','data-bs-ride','data-tippy-content','data-tooltip','href'];
+  return [...el.attributes].filter(a => keep.includes(a.name)).map(a => `${a.name}="${a.value}"`);
+}
+function getClasses(el) {
+  return el.className && typeof el.className === 'string'
+    ? el.className.split(/\s+/).filter(c => c.length > 0 && c.length < 40)
+    : [];
+}
+function getPreview(el) {
+  const t = el.textContent.replace(/\s+/g,' ').trim();
+  return t.length > 70 ? t.slice(0,70)+'…' : t;
+}
+
+function issueCheck(widgetId, el) {
+  const issues = [];
+  const tag = el.tagName ? el.tagName.toLowerCase() : '';
+  if (!el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby') &&
+      !el.textContent.trim() && !el.getAttribute('title') && !el.getAttribute('alt')) {
+    if (['dialog','alertdialog','grid','listbox','menu','toolbar','tree'].includes(widgetId))
+      issues.push({ type:'warn', msg:'No accessible name' });
+  }
+  if (widgetId === 'button' && el.getAttribute('role') === 'button' && tag !== 'button') {
+    if (!el.hasAttribute('tabindex')) issues.push({ type:'warn', msg:'Missing tabindex on role=button' });
+  }
+  if (widgetId === 'dialog' && !el.getAttribute('aria-labelledby') && !el.getAttribute('aria-label'))
+    issues.push({ type:'warn', msg:'Dialog needs accessible label' });
+  if (widgetId === 'link' && tag === 'a' && !el.getAttribute('href'))
+    issues.push({ type:'warn', msg:'Missing href' });
+  if (widgetId === 'link') {
+    const t = (el.textContent||'').trim().toLowerCase();
+    if (['click here','read more','more','here','link'].includes(t))
+      issues.push({ type:'warn', msg:'Non-descriptive link text' });
+  }
+  if (widgetId === 'slider' && !el.hasAttribute('aria-valuenow') && tag !== 'input')
+    issues.push({ type:'warn', msg:'Missing aria-valuenow' });
+  if (widgetId === 'checkbox' && !el.id && tag === 'input')
+    issues.push({ type:'info', msg:'No associated label (needs id+for or wrapping label)' });
+  return issues;
+}
+
+function runRules(doc, widget) {
+  const seen = new Set();
+  const results = [];
+  for (const rule of widget.rules) {
+    let els;
+    try { els = [...doc.querySelectorAll(rule.sel)]; } catch(e) { continue; }
+    for (const el of els) {
+      if (seen.has(el)) continue;
+      seen.add(el);
+      results.push({ el, tier:rule.tier, hint:rule.hint, selector:rule.sel,
+        issues: issueCheck(widget.id, el) });
+    }
+  }
+  return results;
+}
+
+function analyzeAll(doc) {
+  const structExtras = structuralDetectors(doc);
+  // Build map of extra instances per widgetId
+  const extraMap = {};
+  structExtras.forEach(({widgetId, instances}) => {
+    if (!extraMap[widgetId]) extraMap[widgetId] = [];
+    extraMap[widgetId].push(...instances.map(i => ({
+      el: i.el, tier: i.tier, hint: i.hint, selector: i.selector,
+      issues: issueCheck(widgetId, i.el)
+    })));
+  });
+
+  const found = [];
+  for (const w of WIDGETS) {
+    let instances = [];
+    if (w.custom) {
+      if (w.id === 'multislider') instances = detectMultiThumb(doc);
+    } else {
+      instances = runRules(doc, w);
+    }
+    // Merge structural extras (dedupe by el)
+    if (extraMap[w.id]) {
+      const seen = new Set(instances.map(i => i.el));
+      extraMap[w.id].forEach(i => { if (!seen.has(i.el)) { seen.add(i.el); instances.push(i); }});
+    }
+    if (instances.length) found.push({ widget:w, instances });
+  }
+  return found;
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+const TIER_LABEL = { aria:'ARIA', semantic:'Semantic', heuristic:'Class/Attr', structural:'Structural' };
+let _allWidgets = [];
+let _activeCat = 'all';
+let _activeTiers = new Set(['aria','semantic','heuristic','structural']);
+
+function run() {
+  const html = document.getElementById('hi').value.trim();
+  if (!html) { alert('Paste HTML first.'); return; }
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  _allWidgets = analyzeAll(doc);
+  renderResults();
+}
+
+function renderResults() {
+  document.getElementById('es').style.display = 'none';
+  const rc = document.getElementById('rc');
+  rc.style.display = 'flex';
+  rc.style.flexDirection = 'column';
+  rc.style.gap = '8px';
+
+  const visible = _allWidgets.filter(({widget, instances}) => {
+    if (_activeCat !== 'all' && widget.cat !== _activeCat) return false;
+    const filtInst = instances.filter(i => _activeTiers.has(i.tier));
+    return filtInst.length > 0;
+  });
+
+  const totalInstances = visible.reduce((a,b) => a + b.instances.filter(i=>_activeTiers.has(i.tier)).length, 0);
+  const allInstances = _allWidgets.reduce((a,b) => a + b.instances.length, 0);
+
+  const catCount = {structure:0,nav:0,input:0,overlay:0};
+  _allWidgets.forEach(({widget,instances}) => {
+    catCount[widget.cat] = (catCount[widget.cat]||0) + instances.filter(i=>_activeTiers.has(i.tier)).length;
+  });
+
+  const tierCount = {aria:0,semantic:0,heuristic:0,structural:0};
+  _allWidgets.forEach(({instances}) => {
+    instances.forEach(i => { if (_activeTiers.has(i.tier)) tierCount[i.tier] = (tierCount[i.tier]||0)+1; });
+  });
+
+  document.getElementById('rsummary').textContent =
+    `${totalInstances} instances · ${visible.length} widget types`;
+
+  let html = `
+    <div class="stats-row">
+      <div class="sc"><div class="sc-n n-s">${catCount.structure||0}</div><div class="sc-l">Structure</div></div>
+      <div class="sc"><div class="sc-n n-n">${catCount.nav||0}</div><div class="sc-l">Navigation</div></div>
+      <div class="sc"><div class="sc-n n-i">${catCount.input||0}</div><div class="sc-l">Input</div></div>
+      <div class="sc"><div class="sc-n n-o">${catCount.overlay||0}</div><div class="sc-l">Overlay</div></div>
+    </div>
+    <div class="filter-row">
+      <button class="fb fb-all ${_activeCat==='all'?'on':''}" onclick="setCat('all',this)">All (${allInstances})</button>
+      <button class="fb fb-structure ${_activeCat==='structure'?'on':''}" onclick="setCat('structure',this)">Structure</button>
+      <button class="fb fb-nav ${_activeCat==='nav'?'on':''}" onclick="setCat('nav',this)">Navigation</button>
+      <button class="fb fb-input ${_activeCat==='input'?'on':''}" onclick="setCat('input',this)">Input</button>
+      <button class="fb fb-overlay ${_activeCat==='overlay'?'on':''}" onclick="setCat('overlay',this)">Overlay</button>
+    </div>
+    <div class="tier-filter">
+      <span class="tier-filter-label">Tiers:</span>
+      <button class="tf tf-aria ${_activeTiers.has('aria')?'on':''}" onclick="toggleTier('aria',this)">ARIA (${tierCount.aria||0})</button>
+      <button class="tf tf-semantic ${_activeTiers.has('semantic')?'on':''}" onclick="toggleTier('semantic',this)">Semantic (${tierCount.semantic||0})</button>
+      <button class="tf tf-heuristic ${_activeTiers.has('heuristic')?'on':''}" onclick="toggleTier('heuristic',this)">Class/Attr (${tierCount.heuristic||0})</button>
+      <button class="tf tf-structural ${_activeTiers.has('structural')?'on':''}" onclick="toggleTier('structural',this)">Structural (${tierCount.structural||0})</button>
+    </div>
+  `;
+
+  if (visible.length === 0) {
+    html += `<div class="no-results">No widgets matched current filters.</div>`;
+  } else {
+    for (const {widget, instances} of visible) {
+      const filtInst = instances.filter(i => _activeTiers.has(i.tier));
+      if (filtInst.length) html += buildCard(widget, filtInst);
+    }
+  }
+
+  rc.innerHTML = html;
+}
+
+function buildCard(widget, instances) {
+  const catClass = `cat-${widget.cat}`;
+  const MAX = 5;
+  let instHTML = '';
+  instances.forEach((inst, i) => {
+    const hidden = i >= MAX ? 'style="display:none"' : '';
+    const el = inst.el;
+    const tag = el.tagName ? el.tagName.toLowerCase() : '?';
+    const attrs = getDisplayAttrs(el);
+    const classes = getClasses(el).slice(0, 6);
+    const preview = getPreview(el);
+    const attrsHTML = attrs.map(a => `<span class="attr-chip">${esc(a)}</span>`).join('');
+    const classHTML = classes.map(c => `<span class="cls-chip">.${esc(c)}</span>`).join('');
+    const issHTML = (inst.issues || []).map(iss =>
+      `<span class="issue-${iss.type}">${esc(iss.msg)}</span>`).join('');
+    instHTML += `<div class="inst" ${hidden}>
+      <div class="inst-row1">
+        <span class="el-tag">&lt;${esc(tag)}&gt;</span>
+        <span class="tier-pill tp-${inst.tier}">${TIER_LABEL[inst.tier]||inst.tier}</span>
+        <span class="hint-text">${esc(inst.hint)}</span>
+        ${issHTML}
+      </div>
+      ${(attrsHTML||classHTML) ? `<div class="inst-row2">${attrsHTML}${classHTML}</div>` : ''}
+      ${preview ? `<div class="inst-text">"${esc(preview)}"</div>` : ''}
+    </div>`;
+  });
+  const extra = instances.length - MAX;
+  const moreHTML = extra > 0
+    ? `<div class="show-more" onclick="showMore(this,${MAX})">▾ ${extra} more instance${extra>1?'s':''}</div>` : '';
+  return `<div class="wcard ${catClass}" data-cat="${widget.cat}">
+    <div class="card-hd" onclick="toggle(this)">
+      <span class="card-name">${widget.name}</span>
+      <span class="card-cat-badge">${CATS[widget.cat]}</span>
+      <span class="card-count">${instances.length}</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="card-bd">
+      <div class="inst-list">${instHTML}</div>${moreHTML}
+    </div>
+  </div>`;
+}
+
+function toggle(hd) {
+  const bd = hd.nextElementSibling;
+  const ch = hd.querySelector('.chevron');
+  bd.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+function showMore(btn, start) {
+  btn.previousElementSibling.querySelectorAll('.inst').forEach(el => el.style.display='');
+  btn.remove();
+}
+function setCat(cat, btn) { _activeCat = cat; renderResults(); }
+function toggleTier(tier, btn) {
+  if (_activeTiers.has(tier)) {
+    if (_activeTiers.size > 1) _activeTiers.delete(tier);
+  } else { _activeTiers.add(tier); }
+  renderResults();
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function updateCount() {
+  const v = document.getElementById('hi').value;
+  document.getElementById('cc').textContent = v.length.toLocaleString() + ' chars';
+}
+function clearAll() {
+  document.getElementById('hi').value = '';
+  document.getElementById('cc').textContent = '0 chars';
+  document.getElementById('es').style.display = '';
+  const rc = document.getElementById('rc');
+  rc.style.display = 'none'; rc.innerHTML = '';
+  document.getElementById('rsummary').textContent = '';
+}
+
+// ─── Samples ──────────────────────────────────────────────────────────────────
+const SAMPLES = {
+aria: `<!-- ARIA-annotated markup (tier 1 detection) -->
+<header role="banner"><nav aria-label="Main navigation"><a href="/" aria-current="page">Home</a><a href="/about">About</a></nav></header>
+<main role="main">
+  <nav aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li aria-current="page">Products</li></ol></nav>
+  <div role="alert">Session expires in 5 minutes.</div>
+  <button aria-expanded="true" aria-controls="p1">What is ARIA?</button>
+  <div id="p1" role="region" aria-labelledby="h1">ARIA stands for Accessible Rich Internet Applications.</div>
+  <button aria-expanded="false" aria-controls="p2">Why semantics?</button>
+  <div id="p2" role="region" aria-labelledby="h2" hidden>Semantics provide meaning to browsers.</div>
+  <div role="tablist" aria-label="Settings"><button role="tab" aria-selected="true" id="t1" aria-controls="tp1">General</button><button role="tab" aria-selected="false" id="t2" aria-controls="tp2">Advanced</button></div>
+  <div role="tabpanel" id="tp1" aria-labelledby="t1">General settings</div>
+  <div role="tabpanel" id="tp2" aria-labelledby="t2" hidden>Advanced settings</div>
+  <div role="toolbar" aria-label="Text editor"><button aria-pressed="false">B</button><button aria-pressed="false">I</button></div>
+  <button role="switch" aria-checked="true">Dark mode</button>
+  <input type="range" min="0" max="100" value="60" aria-label="Volume" />
+  <div role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" aria-label="Brightness" tabindex="0"></div>
+  <ul role="tree" aria-label="File tree"><li role="treeitem" aria-expanded="true">src/<ul role="group"><li role="treeitem">App.jsx</li></ul></li></ul>
+  <table aria-label="Sales"><thead><tr><th>Item</th><th>Q1</th></tr></thead><tbody><tr><td>Widget</td><td>120</td></tr></tbody></table>
+  <div role="separator" aria-orientation="vertical" aria-valuenow="30" aria-valuemin="10" aria-valuemax="90" tabindex="0"></div>
+  <button aria-describedby="tt1">Help</button><div role="tooltip" id="tt1">Opens help center</div>
+  <meter value="0.7" aria-label="Storage">70%</meter>
+</main>
+<aside role="complementary" aria-label="Related">Sidebar</aside>
+<footer role="contentinfo">Footer</footer>`,
+
+noaria: `<!-- No ARIA at all — structure & class-only detection (tiers 2/3/4) -->
+
+<!-- Landmarks via native elements -->
+<header>
+  <nav>
+    <ul class="nav-menu">
+      <li><a href="/">Home</a></li>
+      <li><a href="/products">Products</a></li>
+      <li class="has-dropdown">
+        <a href="/docs">Docs</a>
+        <ul class="dropdown-menu">
+          <li><a href="/docs/start">Getting started</a></li>
+          <li><a href="/docs/api">API reference</a></li>
+        </ul>
+      </li>
+    </ul>
+    <button class="dropdown-toggle" data-bs-toggle="dropdown">More ▾</button>
+  </nav>
+</header>
+
+<main>
+  <!-- Breadcrumb via structure (nav > ol) -->
+  <nav class="breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href="/products">Products</a></li>
+      <li>Widget Analyzer</li>
+    </ol>
+  </nav>
+
+  <!-- Alert / notification via class -->
+  <div class="alert alert-warning">Your trial ends in 3 days.</div>
+  <div class="toast show">Changes saved!</div>
+  <div class="snackbar">Copied to clipboard</div>
+
+  <!-- Accordion via class + Bootstrap collapse pattern -->
+  <div class="accordion" id="faq">
+    <div class="accordion-item">
+      <h2><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#q1">What is this?</button></h2>
+      <div id="q1" class="collapse show">This is a DOM analyzer.</div>
+    </div>
+    <div class="accordion-item">
+      <h2><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#q2">How does it work?</button></h2>
+      <div id="q2" class="collapse">Paste HTML and click analyze.</div>
+    </div>
+  </div>
+
+  <!-- Native details (no ARIA needed) -->
+  <details>
+    <summary>Show advanced options</summary>
+    <div class="content">
+      <label><input type="checkbox" class="toggle" /> Auto-save</label>
+    </div>
+  </details>
+
+  <!-- Tabs via Bootstrap nav-tabs (class only) -->
+  <ul class="nav nav-tabs">
+    <li class="nav-item"><a class="nav-link active" href="#tab-general">General</a></li>
+    <li class="nav-item"><a class="nav-link" href="#tab-advanced">Advanced</a></li>
+    <li class="nav-item"><a class="nav-link" href="#tab-plugins">Plugins</a></li>
+  </ul>
+  <div id="tab-general" class="tab-panel">General settings content</div>
+  <div id="tab-advanced" class="tab-panel" hidden>Advanced settings content</div>
+  <div id="tab-plugins" class="tab-panel" hidden>Plugin settings</div>
+
+  <!-- Dialog / Modal via class -->
+  <div class="modal" id="edit-modal">
+    <div class="modal-dialog">
+      <div class="modal-header"><h2>Edit profile</h2></div>
+      <div class="modal-body">
+        <label for="name">Name</label>
+        <input type="text" id="name" />
+        <label for="bio">Bio</label>
+        <textarea id="bio"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#edit-modal">Open dialog</button>
+
+  <!-- Toolbar via class -->
+  <div class="toolbar">
+    <button class="btn" title="Bold">B</button>
+    <button class="btn" title="Italic">I</button>
+    <button class="btn" title="Underline">U</button>
+    <select title="Font family"><option>Arial</option><option>Georgia</option></select>
+  </div>
+
+  <!-- Switch via checkbox + class -->
+  <label class="toggle-switch">
+    <input type="checkbox" checked />
+    <span class="slider"></span>
+    <span>Dark mode</span>
+  </label>
+  <div class="form-switch">
+    <input type="checkbox" class="form-check-input" id="notifications" />
+    <label for="notifications">Enable notifications</label>
+  </div>
+
+  <!-- Slider / range -->
+  <input type="range" min="0" max="100" value="60" title="Volume" />
+  <!-- Multi-thumb: two range inputs in same parent -->
+  <div class="range-slider price-filter">
+    <label>Price range</label>
+    <input type="range" min="0" max="1000" value="100" />
+    <input type="range" min="0" max="1000" value="800" />
+  </div>
+
+  <!-- Radio group via fieldset (no ARIA) -->
+  <fieldset>
+    <legend>Preferred theme</legend>
+    <label><input type="radio" name="theme" value="light" /> Light</label>
+    <label><input type="radio" name="theme" value="dark" /> Dark</label>
+    <label><input type="radio" name="theme" value="auto" /> System</label>
+  </fieldset>
+
+  <!-- Checkbox group -->
+  <fieldset>
+    <legend>Notifications</legend>
+    <label><input type="checkbox" checked /> Email</label>
+    <label><input type="checkbox" /> SMS</label>
+  </fieldset>
+
+  <!-- Native table -->
+  <table class="table table-responsive">
+    <thead><tr><th>Product</th><th>Q1</th><th>Q2</th></tr></thead>
+    <tbody>
+      <tr><td>Widget A</td><td>1,200</td><td>1,450</td></tr>
+      <tr><td>Widget B</td><td>980</td><td>1,100</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Tooltip via title attr + data attr -->
+  <button title="Opens the settings panel">Settings</button>
+  <span data-tooltip="Click to copy URL">Share</span>
+  <span data-bs-toggle="tooltip" data-bs-title="Download PDF">⬇ PDF</span>
+
+  <!-- Meter / progress via class -->
+  <progress value="70" max="100">70%</progress>
+  <div class="progress"><div class="progress-bar" style="width:45%">45%</div></div>
+
+  <!-- Tree view via nested list (structural detection) -->
+  <ul class="file-tree">
+    <li>
+      src/
+      <ul>
+        <li>
+          components/
+          <ul>
+            <li>Button.jsx</li>
+            <li>Input.jsx</li>
+          </ul>
+        </li>
+        <li>App.jsx</li>
+        <li>index.js</li>
+      </ul>
+    </li>
+    <li>
+      public/
+      <ul>
+        <li>index.html</li>
+        <li>favicon.ico</li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- Feed / card list (structural detection: div > child divs with img+p) -->
+  <section class="news-feed">
+    <div>
+      <img src="thumb1.jpg" alt="Article thumbnail" />
+      <h3>Breaking news headline</h3>
+      <p>Short summary of the article content here.</p>
+    </div>
+    <div>
+      <img src="thumb2.jpg" alt="Article thumbnail" />
+      <h3>Another story title</h3>
+      <p>Another short article summary here.</p>
+    </div>
+    <div>
+      <img src="thumb3.jpg" alt="Article thumbnail" />
+      <h3>Third headline</h3>
+      <p>Third article content summary.</p>
+    </div>
+  </section>
+
+  <!-- Window splitter via class -->
+  <div class="splitter gutter gutter-horizontal" draggable="true"></div>
+
+  <!-- Select elements -->
+  <select><option>Option A</option><option>Option B</option></select>
+  <select multiple size="4"><option>Option A</option><option>Option B</option><option>Option C</option></select>
+
+  <!-- Spinbutton / number input -->
+  <input type="number" min="1" max="99" value="1" />
+
+  <!-- Plain list inside div (structural: possible listbox) -->
+  <div class="product-options">
+    <ul>
+      <li>Small</li>
+      <li>Medium</li>
+      <li>Large</li>
+      <li>X-Large</li>
+    </ul>
+  </div>
+
+  <!-- Description list — structural accordion candidate -->
+  <dl class="faq-list">
+    <dt>What is the return policy?</dt>
+    <dd>30-day returns on all items.</dd>
+    <dt>Do you ship internationally?</dt>
+    <dd>Yes, to over 50 countries.</dd>
+  </dl>
+
+</main>
+
+<aside><p>Related links</p></aside>
+<footer><p>© 2026 ExampleCorp. All rights reserved.</p></footer>`
+};
+
+function loadSample(type) {
+  document.getElementById('hi').value = SAMPLES[type];
+  updateCount();
+}
+
+document.getElementById('hi').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') run();
+});
+</script>
+</body>
+</html>

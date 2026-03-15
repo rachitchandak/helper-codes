@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOM Widget Analyzer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f0f13;color:#e2e2e8;min-height:100vh;font-size:14px;line-height:1.5}
+code,pre,textarea{font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace}
+
+/* Header */
+.header{background:#0a0a0e;border-bottom:1px solid #1e1e2e;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#7c6af7,#4f9ef8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo h1{font-size:15px;font-weight:600;color:#e2e2e8;letter-spacing:-0.3px}
+.logo p{font-size:11px;color:#6b6b7b;margin-top:1px}
+.header-meta{margin-left:auto;display:flex;align-items:center;gap:8px}
+.badge{font-size:10px;padding:3px 8px;border-radius:99px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+.badge-v{background:#1a1a2e;color:#7c6af7;border:1px solid #2a2a4a}
+.badge-count{background:#1a1a2e;color:#4f9ef8;border:1px solid #1e2e4a}
+
+/* Main layout */
+.main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 65px)}
+@media(max-width:900px){.main{grid-template-columns:1fr;grid-template-rows:auto 1fr}}
+
+/* Input panel */
+.panel-left{border-right:1px solid #1e1e2e;display:flex;flex-direction:column;background:#0a0a0e}
+.panel-header{padding:12px 16px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;justify-content:space-between;background:#0d0d18}
+.panel-title{font-size:11px;font-weight:600;color:#6b6b7b;text-transform:uppercase;letter-spacing:1px}
+.btn-row{display:flex;gap:6px}
+button{cursor:pointer;border:none;outline:none;font:inherit}
+.btn{background:#1a1a2e;color:#9b9bab;border:1px solid #2a2a3a;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;transition:all .15s}
+.btn:hover{background:#232340;color:#c2c2d2;border-color:#3a3a5a}
+.btn-primary{background:#7c6af7;color:#fff;border-color:#7c6af7;padding:5px 14px;font-size:12px;font-weight:600}
+.btn-primary:hover{background:#9080ff;border-color:#9080ff}
+.btn-primary:active{transform:scale(0.97)}
+.btn-ghost{background:transparent;color:#6b6b7b;border:1px solid transparent;padding:4px 10px;border-radius:6px;font-size:12px}
+.btn-ghost:hover{background:#1a1a2e;color:#9b9bab;border-color:#2a2a3a}
+
+textarea{flex:1;background:#0a0a0e;color:#c8c8d8;border:none;resize:none;padding:16px;font-size:12px;line-height:1.7;outline:none;width:100%;height:calc(100vh - 160px)}
+textarea::placeholder{color:#3a3a4a}
+.panel-footer{padding:10px 16px;border-top:1px solid #1e1e2e;display:flex;align-items:center;gap:8px;background:#0d0d18}
+.char-count{font-size:11px;color:#4a4a5a;margin-left:auto}
+
+/* Results panel */
+.panel-right{display:flex;flex-direction:column;overflow:hidden}
+.results-header{padding:12px 16px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;gap:10px;background:#0d0d18;flex-shrink:0}
+.results-scroll{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#3a3a4a}
+.empty-icon{font-size:40px;opacity:.5}
+.empty-state p{font-size:13px;text-align:center;max-width:220px;line-height:1.5}
+
+/* Stats bar */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px}
+.stat-card{background:#0d0d18;border:1px solid #1e1e2e;border-radius:8px;padding:10px 12px}
+.stat-n{font-size:20px;font-weight:700;line-height:1;margin-bottom:3px}
+.stat-l{font-size:10px;color:#6b6b7b;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.n-struct{color:#7c6af7}.n-nav{color:#3bbc8e}.n-input{color:#4f9ef8}.n-overlay{color:#f07a5a}
+
+/* Filter row */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
+.filter-btn{font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid #2a2a3a;background:#1a1a2e;color:#6b6b7b;cursor:pointer;font-weight:500;transition:all .12s}
+.filter-btn:hover{border-color:#3a3a5a;color:#9b9bab}
+.filter-btn.active{color:#fff;border-color:transparent}
+.fb-all.active{background:#2a2a4a;color:#e2e2e8}
+.fb-structure.active{background:#2a1d5a;color:#b8aaff;border-color:#4a3a8a}
+.fb-nav.active{background:#0d2a1e;color:#5de4aa;border-color:#1a5a3a}
+.fb-input.active{background:#0d1e3a;color:#78b8ff;border-color:#1a3a6a}
+.fb-overlay.active{background:#2a1206;color:#f0aa78;border-color:#5a2a12}
+
+/* Widget card */
+.widget-card{background:#0d0d18;border:1px solid #1e1e2e;border-radius:8px;overflow:hidden;transition:border-color .12s}
+.widget-card:hover{border-color:#2a2a3a}
+.widget-card[data-cat="structure"]{border-left:3px solid #4a3a8a}
+.widget-card[data-cat="nav"]{border-left:3px solid #1a6a4a}
+.widget-card[data-cat="input"]{border-left:3px solid #1a3a6a}
+.widget-card[data-cat="overlay"]{border-left:3px solid #6a2a12}
+.card-header{padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.card-header:hover{background:#121224}
+.card-name{font-size:13px;font-weight:600;color:#c2c2d2;flex:1}
+.card-cat{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.cat-structure .card-cat{background:#1a1030;color:#9a8aef;border:1px solid #3a2a6a}
+.cat-nav .card-cat{background:#0a1e14;color:#4ac88a;border:1px solid #1a4a2a}
+.cat-input .card-cat{background:#0a1428;color:#5898e8;border:1px solid #1a2a5a}
+.cat-overlay .card-cat{background:#1e0a04;color:#d87848;border:1px solid #4a1a08}
+.card-count{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#1a1a2e;color:#7c6af7;border:1px solid #2a2a4a;min-width:28px;text-align:center}
+.card-chevron{color:#3a3a4a;font-size:10px;transition:transform .15s}
+.card-chevron.open{transform:rotate(90deg)}
+.card-body{border-top:1px solid #1a1a28;display:none}
+.card-body.open{display:block}
+.instance-list{max-height:300px;overflow-y:auto}
+.instance{padding:8px 12px;border-bottom:1px solid #14141e;display:flex;flex-direction:column;gap:4px}
+.instance:last-child{border-bottom:none}
+.instance:hover{background:#0a0a14}
+.inst-tag{display:flex;align-items:center;gap:6px}
+.tag-el{font-size:11px;font-weight:600;background:#1a1030;color:#9a8aef;padding:1px 6px;border-radius:4px;font-family:monospace}
+.inst-hint{font-size:11px;color:#4a4a5a}
+.inst-attrs{display:flex;gap:4px;flex-wrap:wrap}
+.attr-chip{font-size:10px;font-family:monospace;padding:1px 6px;border-radius:3px;background:#121224;color:#6b8af7;border:1px solid #1e1e3a}
+.inst-text{font-size:11px;color:#4a4a5a;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.show-more{padding:8px 12px;font-size:11px;color:#4f9ef8;cursor:pointer;text-align:center;border-top:1px solid #14141e}
+.show-more:hover{background:#0a0a14;color:#7cbdff}
+
+/* Issue indicators */
+.issue-warning{font-size:10px;padding:1px 6px;border-radius:3px;background:#1a1200;color:#d4a017;border:1px solid #3a2a00}
+.issue-info{font-size:10px;padding:1px 6px;border-radius:3px;background:#001224;color:#4f9ef8;border:1px solid #00244a}
+
+/* Script modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-box{background:#0d0d18;border:1px solid #2a2a3a;border-radius:12px;width:100%;max-width:620px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{padding:14px 16px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:600;color:#c2c2d2}
+.modal-body{padding:16px;overflow-y:auto;flex:1}
+.modal-body p{font-size:12px;color:#6b6b7b;line-height:1.6;margin-bottom:12px}
+.code-block{background:#070710;border:1px solid #1a1a2a;border-radius:6px;padding:12px;font-size:10.5px;line-height:1.7;color:#a8d8a8;overflow-x:auto;white-space:pre;font-family:monospace}
+.modal-footer{padding:10px 16px;border-top:1px solid #1e1e2e;display:flex;gap:8px;justify-content:flex-end}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0a0a0e}
+::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#3a3a4a}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <h1>DOM Widget Analyzer</h1>
+      <p>ARIA pattern detection &amp; accessibility audit</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-v">v2.0</span>
+    <span class="badge badge-count" id="widget-type-count">30 patterns</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="panel-left">
+    <div class="panel-header">
+      <span class="panel-title">HTML Input</span>
+      <div class="btn-row">
+        <button class="btn" onclick="loadSample()">Load sample</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+        <button class="btn" onclick="showScript()">Bookmarklet</button>
+      </div>
+    </div>
+    <textarea id="html-input" spellcheck="false" placeholder="Paste your HTML markup here...
+
+The analyzer will detect 30 ARIA widget patterns:
+• Accordion, Alert, Alert dialog, Breadcrumb
+• Button, Carousel, Checkbox, Combobox
+• Dialog, Disclosure, Feed, Grid, Landmarks
+• Link, Listbox, Menu, Menu button, Meter
+• Radio group, Slider, Multi-thumb Slider
+• Spinbutton, Switch, Table, Tabs
+• Toolbar, Tooltip, Tree view, Treegrid
+• Window splitter" oninput="updateCount()"></textarea>
+    <div class="panel-footer">
+      <button class="btn btn-primary" onclick="analyzeHTML()">Analyze DOM →</button>
+      <span class="char-count" id="char-count">0 chars</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div class="panel-right">
+    <div class="results-header" id="results-header">
+      <span class="panel-title">Results</span>
+      <span id="results-summary" style="font-size:11px;color:#4a4a5a"></span>
+    </div>
+    <div class="results-scroll" id="results-scroll">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">⬡</div>
+        <p>Paste HTML and click <strong style="color:#9b9bab">Analyze DOM</strong> to detect widget patterns</p>
+      </div>
+      <div id="results-content" style="display:none;display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bookmarklet modal -->
+<div class="modal-overlay" id="script-modal" style="display:none" onclick="if(event.target===this)hideScript()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Browser Bookmarklet</span>
+      <button class="btn btn-ghost" onclick="hideScript()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Drag this link to your bookmarks bar, then click it on any page to analyze widgets in the live DOM:</p>
+      <a id="bookmarklet-link" href="#" style="display:inline-block;padding:8px 16px;background:#7c6af7;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;margin-bottom:16px">⬡ Widget Analyzer</a>
+      <p style="margin-top:8px">Or paste this script in your browser console:</p>
+      <div class="code-block" id="console-script"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="copyScript()">Copy script</button>
+      <button class="btn btn-primary" onclick="hideScript()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Widget definitions ─────────────────────────────────────────────────────
+const CATS = {
+  structure: 'Structure',
+  nav:       'Navigation',
+  input:     'Input',
+  overlay:   'Overlay'
+};
+
+const WIDGETS = [
+  { id:'accordion', name:'Accordion', cat:'structure',
+    desc:'Vertically stacked interactive headings that reveal/hide content',
+    rules:[
+      { sel:'details',                                   hint:'Native details/summary accordion' },
+      { sel:'button[aria-expanded][aria-controls]',      hint:'ARIA accordion trigger button' },
+      { sel:'[role="region"][aria-labelledby]',          hint:'ARIA accordion panel (region)' },
+    ]
+  },
+  { id:'alert', name:'Alert', cat:'overlay',
+    desc:'Important time-sensitive message announced by screen readers',
+    rules:[
+      { sel:'[role="alert"]',   hint:'ARIA live alert region' },
+      { sel:'[role="status"]',  hint:'ARIA status / polite live region' },
+    ]
+  },
+  { id:'alertdialog', name:'Alert dialog', cat:'overlay',
+    desc:'Modal dialog requiring user acknowledgment or response',
+    rules:[
+      { sel:'[role="alertdialog"]', hint:'ARIA alert dialog' },
+    ]
+  },
+  { id:'breadcrumb', name:'Breadcrumb', cat:'nav',
+    desc:'Hierarchical navigation trail showing current location',
+    rules:[
+      { sel:'[aria-label*="breadcrumb" i]',           hint:'Breadcrumb by aria-label' },
+      { sel:'[aria-label*="you are here" i]',         hint:'Breadcrumb by aria-label' },
+      { sel:'nav ol[aria-label]',                      hint:'Nav ordered list breadcrumb' },
+      { sel:'.breadcrumb',                             hint:'Breadcrumb CSS class' },
+      { sel:'[data-breadcrumb]',                       hint:'Breadcrumb data attribute' },
+      { sel:'ol.breadcrumb, ul.breadcrumb',            hint:'Breadcrumb list class' },
+      { sel:'[itemtype*="BreadcrumbList"]',            hint:'Schema.org BreadcrumbList' },
+    ]
+  },
+  { id:'button', name:'Button', cat:'input',
+    desc:'Clickable control that triggers actions',
+    rules:[
+      { sel:'button',                   hint:'Native button element' },
+      { sel:'[role="button"]',          hint:'ARIA button role' },
+      { sel:'input[type="button"]',     hint:'Input button' },
+      { sel:'input[type="submit"]',     hint:'Form submit button' },
+      { sel:'input[type="reset"]',      hint:'Form reset button' },
+    ]
+  },
+  { id:'carousel', name:'Carousel', cat:'structure',
+    desc:'Rotating set of items displayed one at a time',
+    rules:[
+      { sel:'[aria-roledescription*="carousel" i]',  hint:'ARIA carousel (roledescription)' },
+      { sel:'[role="region"][aria-label*="carousel" i]', hint:'Carousel region by label' },
+      { sel:'.carousel',                              hint:'Bootstrap/generic carousel class' },
+      { sel:'[data-bs-ride="carousel"]',              hint:'Bootstrap 5 carousel' },
+      { sel:'[data-ride="carousel"]',                 hint:'Bootstrap 4 carousel' },
+      { sel:'.slick-slider',                          hint:'Slick carousel' },
+      { sel:'.swiper',                                hint:'Swiper carousel' },
+    ]
+  },
+  { id:'checkbox', name:'Checkbox', cat:'input',
+    desc:'Binary on/off control for form selections',
+    rules:[
+      { sel:'input[type="checkbox"]',  hint:'Native checkbox input' },
+      { sel:'[role="checkbox"]',       hint:'ARIA checkbox role' },
+    ]
+  },
+  { id:'combobox', name:'Combobox', cat:'input',
+    desc:'Text input with associated popup list of options',
+    rules:[
+      { sel:'[role="combobox"]',           hint:'ARIA combobox' },
+      { sel:'input[list]',                 hint:'Native datalist combobox' },
+      { sel:'input[aria-autocomplete]',    hint:'Autocomplete input' },
+      { sel:'input[aria-haspopup]',        hint:'Input with popup' },
+    ]
+  },
+  { id:'dialog', name:'Dialog (modal)', cat:'overlay',
+    desc:'Window overlaid on primary content, making rest inert',
+    rules:[
+      { sel:'[role="dialog"]',         hint:'ARIA dialog role' },
+      { sel:'dialog',                  hint:'Native <dialog> element' },
+      { sel:'[aria-modal="true"]',     hint:'ARIA modal attribute' },
+      { sel:'.modal-dialog',           hint:'Bootstrap modal dialog' },
+      { sel:'[data-dialog]',           hint:'Custom dialog attribute' },
+    ]
+  },
+  { id:'disclosure', name:'Disclosure (show/hide)', cat:'structure',
+    desc:'Button that controls visibility of another section',
+    rules:[
+      { sel:'button[aria-expanded]:not([aria-controls])', hint:'Disclosure trigger (no controls)' },
+      { sel:'[aria-expanded][aria-pressed]',              hint:'Toggle disclosure button' },
+      { sel:'summary',                                    hint:'Native details summary' },
+    ]
+  },
+  { id:'feed', name:'Feed', cat:'structure',
+    desc:'Dynamic list of articles (social media, news)',
+    rules:[
+      { sel:'[role="feed"]',     hint:'ARIA feed container' },
+      { sel:'[role="article"]',  hint:'Feed article item' },
+      { sel:'article',           hint:'Native article element' },
+    ]
+  },
+  { id:'grid', name:'Grid', cat:'structure',
+    desc:'Interactive tabular data with keyboard navigation',
+    rules:[
+      { sel:'[role="grid"]',          hint:'ARIA grid container' },
+      { sel:'[role="gridcell"]',      hint:'Grid cell' },
+      { sel:'[role="columnheader"]',  hint:'Grid column header' },
+      { sel:'[role="rowheader"]',     hint:'Grid row header' },
+    ]
+  },
+  { id:'landmark', name:'Landmark', cat:'structure',
+    desc:'Page regions for screen reader navigation',
+    rules:[
+      { sel:'header, [role="banner"]',            hint:'Banner landmark' },
+      { sel:'nav, [role="navigation"]',           hint:'Navigation landmark' },
+      { sel:'main, [role="main"]',               hint:'Main content landmark' },
+      { sel:'aside, [role="complementary"]',      hint:'Complementary landmark' },
+      { sel:'footer, [role="contentinfo"]',       hint:'Content info landmark' },
+      { sel:'[role="search"]',                    hint:'Search landmark' },
+      { sel:'form[aria-label], form[aria-labelledby], [role="form"]', hint:'Form landmark' },
+      { sel:'[role="region"][aria-label]',        hint:'Generic named region landmark' },
+    ]
+  },
+  { id:'link', name:'Link', cat:'nav',
+    desc:'Navigates to another location or in-page anchor',
+    rules:[
+      { sel:'a[href]',           hint:'Native anchor link' },
+      { sel:'[role="link"]',     hint:'ARIA link role' },
+      { sel:'a[aria-current]',   hint:'Current-page link' },
+    ]
+  },
+  { id:'listbox', name:'Listbox', cat:'input',
+    desc:'Widget with a list of selectable options',
+    rules:[
+      { sel:'[role="listbox"]',  hint:'ARIA listbox' },
+      { sel:'[role="option"]',   hint:'Listbox option' },
+      { sel:'select[multiple]',  hint:'Native multi-select (listbox)' },
+      { sel:'select[size]',      hint:'Native expanded select' },
+    ]
+  },
+  { id:'menu', name:'Menu / Menubar', cat:'overlay',
+    desc:'List of actions or options (not navigation)',
+    rules:[
+      { sel:'[role="menu"]',             hint:'ARIA menu' },
+      { sel:'[role="menubar"]',          hint:'ARIA menubar' },
+      { sel:'[role="menuitem"]',         hint:'Menu item' },
+      { sel:'[role="menuitemcheckbox"]', hint:'Checkable menu item' },
+      { sel:'[role="menuitemradio"]',    hint:'Radio menu item' },
+    ]
+  },
+  { id:'menubutton', name:'Menu button', cat:'overlay',
+    desc:'Button that opens a menu popup',
+    rules:[
+      { sel:'button[aria-haspopup="menu"]',      hint:'Button → menu popup' },
+      { sel:'button[aria-haspopup="true"]',      hint:'Button → generic popup' },
+      { sel:'[aria-haspopup="listbox"]',         hint:'Button → listbox popup' },
+      { sel:'[aria-haspopup="tree"]',            hint:'Button → tree popup' },
+      { sel:'[aria-haspopup="grid"]',            hint:'Button → grid popup' },
+      { sel:'[aria-haspopup="dialog"]',          hint:'Button → dialog popup' },
+    ]
+  },
+  { id:'meter', name:'Meter', cat:'input',
+    desc:'Scalar measurement within a known range (not progress)',
+    rules:[
+      { sel:'meter',            hint:'Native meter element' },
+      { sel:'[role="meter"]',   hint:'ARIA meter role' },
+    ]
+  },
+  { id:'radiogroup', name:'Radio group', cat:'input',
+    desc:'Group of mutually exclusive radio buttons',
+    rules:[
+      { sel:'[role="radiogroup"]',        hint:'ARIA radio group container' },
+      { sel:'[role="radio"]',             hint:'ARIA radio button' },
+      { sel:'input[type="radio"]',        hint:'Native radio input' },
+      { sel:'fieldset',                   hint:'Fieldset group container' },
+    ]
+  },
+  { id:'slider', name:'Slider', cat:'input',
+    desc:'Selects a value from a range by dragging a thumb',
+    rules:[
+      { sel:'input[type="range"]',  hint:'Native range slider' },
+      { sel:'[role="slider"]',      hint:'ARIA slider' },
+    ]
+  },
+  { id:'multislider', name:'Slider (multi-thumb)', cat:'input',
+    desc:'Range slider with two or more thumbs (e.g. price range)',
+    custom: true
+  },
+  { id:'spinbutton', name:'Spinbutton', cat:'input',
+    desc:'Input where value is chosen from ordered set of values',
+    rules:[
+      { sel:'[role="spinbutton"]',  hint:'ARIA spinbutton' },
+      { sel:'input[type="number"]', hint:'Native number input' },
+    ]
+  },
+  { id:'switch', name:'Switch', cat:'input',
+    desc:'Toggle that represents on/off state (like a light switch)',
+    rules:[
+      { sel:'[role="switch"]',  hint:'ARIA switch role' },
+    ]
+  },
+  { id:'table', name:'Table', cat:'structure',
+    desc:'Static tabular data with headers and rows',
+    rules:[
+      { sel:'table',              hint:'Native table element' },
+      { sel:'[role="table"]',     hint:'ARIA table role' },
+      { sel:'[role="row"]',       hint:'Table row' },
+      { sel:'[role="cell"]',      hint:'Table data cell' },
+      { sel:'[role="rowgroup"]',  hint:'Table row group' },
+    ]
+  },
+  { id:'tabs', name:'Tabs', cat:'nav',
+    desc:'Panel switcher with tab list and associated panels',
+    rules:[
+      { sel:'[role="tablist"]',   hint:'Tab list container' },
+      { sel:'[role="tab"]',       hint:'Individual tab' },
+      { sel:'[role="tabpanel"]',  hint:'Tab panel content' },
+    ]
+  },
+  { id:'toolbar', name:'Toolbar', cat:'nav',
+    desc:'Container for a group of action buttons or controls',
+    rules:[
+      { sel:'[role="toolbar"]',  hint:'ARIA toolbar container' },
+    ]
+  },
+  { id:'tooltip', name:'Tooltip', cat:'overlay',
+    desc:'Contextual text popup triggered on focus or hover',
+    rules:[
+      { sel:'[role="tooltip"]',    hint:'ARIA tooltip element' },
+      { sel:'[aria-describedby]',  hint:'Element described by tooltip' },
+      { sel:'[data-tooltip]',      hint:'Custom tooltip attribute' },
+      { sel:'[data-tippy-content]',hint:'Tippy.js tooltip' },
+    ]
+  },
+  { id:'treeview', name:'Tree view', cat:'structure',
+    desc:'Hierarchical list that can be expanded/collapsed',
+    rules:[
+      { sel:'[role="tree"]',      hint:'ARIA tree container' },
+      { sel:'[role="treeitem"]',  hint:'Tree item node' },
+    ]
+  },
+  { id:'treegrid', name:'Treegrid', cat:'structure',
+    desc:'Grid with rows that can be expanded like a tree',
+    rules:[
+      { sel:'[role="treegrid"]',  hint:'ARIA treegrid container' },
+    ]
+  },
+  { id:'windowsplitter', name:'Window splitter', cat:'structure',
+    desc:'Draggable separator between two resizable panels',
+    rules:[
+      { sel:'[role="separator"][aria-valuenow]',    hint:'ARIA separator with value (splitter)' },
+      { sel:'[role="separator"][aria-orientation]', hint:'ARIA separator with orientation' },
+      { sel:'[role="separator"][tabindex]',          hint:'Focusable separator (splitter)' },
+    ]
+  },
+];
+
+// ─── Detection ───────────────────────────────────────────────────────────────
+function getAttrs(el) {
+  const keep = ['role','aria-label','aria-labelledby','aria-describedby','aria-expanded',
+    'aria-haspopup','aria-controls','aria-selected','aria-checked','aria-pressed',
+    'aria-modal','aria-orientation','aria-valuenow','aria-valuemin','aria-valuemax',
+    'aria-autocomplete','aria-roledescription','aria-current','type','tabindex'];
+  return [...el.attributes]
+    .filter(a => keep.includes(a.name))
+    .map(a => `${a.name}="${a.value}"`);
+}
+
+function getPreview(el) {
+  const txt = el.textContent.replace(/\s+/g,' ').trim();
+  return txt.length > 60 ? txt.slice(0,60)+'…' : txt;
+}
+
+function detectMultiThumb(doc) {
+  const allSliders = [...doc.querySelectorAll('[role="slider"]')];
+  const parentMap = new Map();
+  for (const s of allSliders) {
+    const p = s.parentElement;
+    if (!p) continue;
+    if (!parentMap.has(p)) parentMap.set(p, []);
+    parentMap.get(p).push(s);
+  }
+  const results = [];
+  for (const [parent, sliders] of parentMap.entries()) {
+    if (sliders.length >= 2) {
+      results.push({
+        tagName: parent.tagName.toLowerCase(),
+        selector: `[role="slider"] ×${sliders.length}`,
+        hint: `Container with ${sliders.length} slider thumbs`,
+        attrs: getAttrs(parent),
+        text: getPreview(parent),
+        issues: checkIssues('multislider', parent)
+      });
+    }
+  }
+  return results;
+}
+
+function checkIssues(widgetId, el) {
+  const issues = [];
+  const role = el.getAttribute('role');
+  const tag = el.tagName.toLowerCase();
+
+  // General checks
+  if (!el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby') && !el.textContent.trim()) {
+    issues.push({ type:'warn', msg:'No accessible name' });
+  }
+
+  // Widget-specific checks
+  if (widgetId === 'button') {
+    if (role === 'button' && tag !== 'button' && !el.hasAttribute('tabindex')) {
+      issues.push({ type:'warn', msg:'Non-button with role="button" missing tabindex' });
+    }
+    if (role === 'button' && tag !== 'button' && !el.hasAttribute('onkeydown') && !el.hasAttribute('onkeypress')) {
+      issues.push({ type:'info', msg:'Ensure keyboard events (Enter/Space) are handled' });
+    }
+  }
+  if (widgetId === 'dialog') {
+    if (!el.getAttribute('aria-labelledby') && !el.getAttribute('aria-label')) {
+      issues.push({ type:'warn', msg:'Dialog missing accessible label' });
+    }
+  }
+  if (widgetId === 'link') {
+    if (tag === 'a' && !el.getAttribute('href')) {
+      issues.push({ type:'warn', msg:'Anchor missing href attribute' });
+    }
+    if (el.textContent.trim().toLowerCase() === 'click here' || el.textContent.trim().toLowerCase() === 'read more') {
+      issues.push({ type:'warn', msg:'Non-descriptive link text' });
+    }
+  }
+  if (widgetId === 'image-button') {
+    if (tag === 'img' && !el.getAttribute('alt')) {
+      issues.push({ type:'warn', msg:'Image missing alt text' });
+    }
+  }
+  if (widgetId === 'tabs') {
+    if (role === 'tab' && !el.hasAttribute('aria-selected')) {
+      issues.push({ type:'warn', msg:'Tab missing aria-selected' });
+    }
+  }
+  if (widgetId === 'slider') {
+    if (!el.hasAttribute('aria-valuenow') && tag !== 'input') {
+      issues.push({ type:'warn', msg:'Slider missing aria-valuenow' });
+    }
+  }
+  return issues;
+}
+
+function analyzeWidget(doc, widget) {
+  if (widget.custom) {
+    if (widget.id === 'multislider') return detectMultiThumb(doc);
+    return [];
+  }
+  const seen = new Set();
+  const results = [];
+  for (const rule of widget.rules) {
+    let els;
+    try { els = [...doc.querySelectorAll(rule.sel)]; }
+    catch(e) { continue; }
+    for (const el of els) {
+      if (seen.has(el)) continue;
+      seen.add(el);
+      results.push({
+        tagName: el.tagName.toLowerCase(),
+        selector: rule.sel,
+        hint: rule.hint,
+        attrs: getAttrs(el),
+        text: getPreview(el),
+        issues: checkIssues(widget.id, el)
+      });
+    }
+  }
+  return results;
+}
+
+// ─── Analysis entry point ────────────────────────────────────────────────────
+function analyzeHTML() {
+  const html = document.getElementById('html-input').value.trim();
+  if (!html) { alert('Paste some HTML first.'); return; }
+
+  const parser = new DOMParser();
+  let doc;
+  try {
+    doc = parser.parseFromString(html, 'text/html');
+  } catch(e) {
+    alert('Failed to parse HTML: ' + e.message);
+    return;
+  }
+
+  const foundWidgets = [];
+  for (const w of WIDGETS) {
+    const instances = analyzeWidget(doc, w);
+    if (instances.length > 0) {
+      foundWidgets.push({ widget: w, instances });
+    }
+  }
+
+  renderResults(foundWidgets);
+}
+
+// ─── Rendering ───────────────────────────────────────────────────────────────
+let activeFilter = 'all';
+
+function renderResults(foundWidgets) {
+  const empty = document.getElementById('empty-state');
+  const content = document.getElementById('results-content');
+  const summary = document.getElementById('results-summary');
+
+  empty.style.display = 'none';
+  content.style.display = 'flex';
+  content.style.flexDirection = 'column';
+  content.style.gap = '10px';
+
+  const total = foundWidgets.reduce((a,b) => a + b.instances.length, 0);
+  const types = foundWidgets.length;
+  const issues = foundWidgets.reduce((a,b) => a + b.instances.reduce((c,d) => c + d.issues.length, 0), 0);
+
+  // Count by category
+  const catCount = { structure:0, nav:0, input:0, overlay:0 };
+  for (const { widget, instances } of foundWidgets) {
+    catCount[widget.cat] = (catCount[widget.cat]||0) + instances.length;
+  }
+
+  summary.textContent = `${total} instances · ${types} widget types · ${issues} issues`;
+
+  // Build stats + filter
+  let html = `
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-n n-struct">${catCount.structure||0}</div><div class="stat-l">Structure</div></div>
+      <div class="stat-card"><div class="stat-n n-nav">${catCount.nav||0}</div><div class="stat-l">Navigation</div></div>
+      <div class="stat-card"><div class="stat-n n-input">${catCount.input||0}</div><div class="stat-l">Input</div></div>
+      <div class="stat-card"><div class="stat-n n-overlay">${catCount.overlay||0}</div><div class="stat-l">Overlay</div></div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn fb-all active" onclick="setFilter('all',this)">All (${total})</button>
+      <button class="filter-btn fb-structure" onclick="setFilter('structure',this)">Structure (${catCount.structure||0})</button>
+      <button class="filter-btn fb-nav" onclick="setFilter('nav',this)">Navigation (${catCount.nav||0})</button>
+      <button class="filter-btn fb-input" onclick="setFilter('input',this)">Input (${catCount.input||0})</button>
+      <button class="filter-btn fb-overlay" onclick="setFilter('overlay',this)">Overlay (${catCount.overlay||0})</button>
+    </div>
+  `;
+
+  if (foundWidgets.length === 0) {
+    html += `<div class="empty-state" style="height:200px"><div class="empty-icon" style="font-size:28px">○</div><p>No widget patterns detected. Try loading the sample HTML.</p></div>`;
+  } else {
+    for (const { widget, instances } of foundWidgets) {
+      html += buildWidgetCard(widget, instances);
+    }
+  }
+
+  content.innerHTML = html;
+  activeFilter = 'all';
+}
+
+function buildWidgetCard(widget, instances) {
+  const catClass = `cat-${widget.cat}`;
+  const catLabel = CATS[widget.cat];
+  const SHOW_INIT = 4;
+
+  let instHTML = '';
+  for (let i = 0; i < instances.length; i++) {
+    const inst = instances[i];
+    const hidden = i >= SHOW_INIT ? 'style="display:none"' : '';
+    const attrsHTML = inst.attrs.length
+      ? inst.attrs.map(a => `<span class="attr-chip">${escHtml(a)}</span>`).join('')
+      : '<span style="font-size:10px;color:#3a3a4a">no ARIA attrs</span>';
+    const issuesHTML = inst.issues.map(iss =>
+      `<span class="issue-${iss.type}">${escHtml(iss.msg)}</span>`
+    ).join('');
+    instHTML += `
+      <div class="instance" ${hidden}>
+        <div class="inst-tag">
+          <span class="tag-el">&lt;${escHtml(inst.tagName)}&gt;</span>
+          <span class="inst-hint">${escHtml(inst.hint)}</span>
+          ${issuesHTML}
+        </div>
+        ${inst.attrs.length || true ? `<div class="inst-attrs">${attrsHTML}</div>` : ''}
+        ${inst.text ? `<div class="inst-text">"${escHtml(inst.text)}"</div>` : ''}
+      </div>`;
+  }
+
+  const extra = instances.length - SHOW_INIT;
+  const moreHTML = extra > 0
+    ? `<div class="show-more" onclick="showMore(this, ${SHOW_INIT})">Show ${extra} more instance${extra===1?'':'s'}</div>`
+    : '';
+
+  return `
+    <div class="widget-card ${catClass}" data-cat="${widget.cat}">
+      <div class="card-header" onclick="toggleCard(this)">
+        <span class="card-name">${widget.name}</span>
+        <span class="card-cat">${catLabel}</span>
+        <span class="card-count">${instances.length}</span>
+        <span class="card-chevron">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="instance-list">${instHTML}</div>
+        ${moreHTML}
+      </div>
+    </div>`;
+}
+
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.card-chevron');
+  const isOpen = body.classList.toggle('open');
+  chevron.classList.toggle('open', isOpen);
+}
+
+function showMore(btn, startIdx) {
+  const list = btn.previousElementSibling;
+  const items = list.querySelectorAll('.instance');
+  items.forEach(el => el.style.display = '');
+  btn.remove();
+}
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.widget-card').forEach(card => {
+    card.style.display = (cat === 'all' || card.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── UI helpers ──────────────────────────────────────────────────────────────
+function updateCount() {
+  const v = document.getElementById('html-input').value;
+  document.getElementById('char-count').textContent = `${v.length.toLocaleString()} chars`;
+}
+
+function clearAll() {
+  document.getElementById('html-input').value = '';
+  document.getElementById('char-count').textContent = '0 chars';
+  document.getElementById('empty-state').style.display = '';
+  document.getElementById('results-content').style.display = 'none';
+  document.getElementById('results-content').innerHTML = '';
+  document.getElementById('results-summary').textContent = '';
+}
+
+// ─── Sample HTML ─────────────────────────────────────────────────────────────
+const SAMPLE_HTML = `<!-- ============================================================
+  ARIA Widget Patterns — Sample HTML
+  All 30 widget types represented
+  ============================================================ -->
+
+<!-- LANDMARKS -->
+<header role="banner" aria-label="Site header">
+  <nav aria-label="Main navigation" role="navigation">
+    <a href="/home">Home</a>
+    <a href="/about">About</a>
+  </nav>
+</header>
+
+<main role="main" id="content">
+
+<!-- BREADCRUMB -->
+<nav aria-label="Breadcrumb">
+  <ol>
+    <li><a href="/">Home</a></li>
+    <li><a href="/products">Products</a></li>
+    <li aria-current="page">Widget Analyzer</li>
+  </ol>
+</nav>
+
+<!-- ALERT -->
+<div role="alert">Your session will expire in 5 minutes.</div>
+<div role="status">Form saved successfully.</div>
+
+<!-- ALERT DIALOG -->
+<div role="alertdialog" aria-labelledby="adlg-title" aria-describedby="adlg-desc" aria-modal="true">
+  <h2 id="adlg-title">Confirm deletion</h2>
+  <p id="adlg-desc">This action cannot be undone.</p>
+  <button>Cancel</button>
+  <button>Delete</button>
+</div>
+
+<!-- ACCORDION -->
+<section>
+  <button aria-expanded="true" aria-controls="panel-1">What is ARIA?</button>
+  <div id="panel-1" role="region" aria-labelledby="heading-1">
+    ARIA stands for Accessible Rich Internet Applications.
+  </div>
+
+  <button aria-expanded="false" aria-controls="panel-2">Why use semantic HTML?</button>
+  <div id="panel-2" role="region" aria-labelledby="heading-2" hidden>
+    Semantic HTML provides meaning to browsers and assistive technologies.
+  </div>
+
+  <details>
+    <summary>Native details element</summary>
+    This uses the browser's built-in disclosure mechanism.
+  </details>
+</section>
+
+<!-- DISCLOSURE (show/hide) -->
+<button aria-expanded="false">Show advanced options</button>
+<div id="adv-opts" hidden>Advanced options panel</div>
+
+<!-- DIALOG -->
+<dialog aria-labelledby="dlg-title" aria-modal="true">
+  <h2 id="dlg-title">Edit profile</h2>
+  <form>
+    <label>Name: <input type="text" /></label>
+    <button type="submit">Save</button>
+  </form>
+</dialog>
+<button aria-haspopup="dialog">Open dialog</button>
+
+<!-- CAROUSEL -->
+<section aria-roledescription="carousel" aria-label="Featured products" role="region">
+  <div aria-roledescription="slide" role="group" aria-label="Slide 1 of 3">Item 1</div>
+  <div aria-roledescription="slide" role="group" aria-label="Slide 2 of 3" aria-hidden="true">Item 2</div>
+  <button aria-label="Previous slide">‹</button>
+  <button aria-label="Next slide">›</button>
+</section>
+
+<!-- TABS -->
+<div role="tablist" aria-label="Editor settings">
+  <button role="tab" aria-selected="true" aria-controls="tab-panel-1" id="tab-1">General</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-panel-2" id="tab-2">Advanced</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-panel-3" id="tab-3">Plugins</button>
+</div>
+<div role="tabpanel" id="tab-panel-1" aria-labelledby="tab-1">General settings</div>
+<div role="tabpanel" id="tab-panel-2" aria-labelledby="tab-2" hidden>Advanced settings</div>
+<div role="tabpanel" id="tab-panel-3" aria-labelledby="tab-3" hidden>Plugin settings</div>
+
+<!-- TOOLBAR -->
+<div role="toolbar" aria-label="Text formatting">
+  <button aria-pressed="false" aria-label="Bold">B</button>
+  <button aria-pressed="false" aria-label="Italic">I</button>
+  <button aria-pressed="true" aria-label="Underline">U</button>
+  <select aria-label="Font size">
+    <option>12px</option>
+    <option>16px</option>
+  </select>
+</div>
+
+<!-- MENU / MENUBAR / MENU BUTTON -->
+<nav role="menubar" aria-label="Application menu">
+  <button role="menuitem" aria-haspopup="menu" aria-expanded="false">File</button>
+  <button role="menuitem" aria-haspopup="menu" aria-expanded="false">Edit</button>
+</nav>
+
+<ul role="menu" aria-label="File menu">
+  <li role="menuitem">New</li>
+  <li role="menuitem">Open...</li>
+  <li role="menuitemcheckbox" aria-checked="true">Auto-save</li>
+  <li role="menuitem">Exit</li>
+</ul>
+
+<button aria-haspopup="menu" aria-expanded="false" aria-controls="context-menu">
+  Options ▾
+</button>
+
+<!-- LISTBOX -->
+<div role="listbox" aria-label="Select country" aria-multiselectable="false">
+  <div role="option" aria-selected="true">Australia</div>
+  <div role="option" aria-selected="false">Canada</div>
+  <div role="option" aria-selected="false">New Zealand</div>
+</div>
+
+<!-- COMBOBOX -->
+<label id="country-label">Country</label>
+<input type="text" role="combobox" aria-labelledby="country-label"
+  aria-expanded="false" aria-controls="country-listbox" aria-autocomplete="list" />
+<input type="text" list="browsers-list" />
+<datalist id="browsers-list">
+  <option value="Chrome">
+  <option value="Firefox">
+</datalist>
+
+<!-- BUTTONS -->
+<button type="button">Submit form</button>
+<button type="submit">Submit</button>
+<div role="button" tabindex="0">Custom button</div>
+<input type="button" value="Input button" />
+
+<!-- CHECKBOX -->
+<input type="checkbox" id="agree" />
+<label for="agree">I agree to terms</label>
+<div role="checkbox" aria-checked="false" tabindex="0">Custom checkbox</div>
+
+<!-- RADIO GROUP -->
+<fieldset>
+  <legend>Preferred contact method</legend>
+  <input type="radio" name="contact" id="r-email" />
+  <label for="r-email">Email</label>
+  <input type="radio" name="contact" id="r-phone" />
+  <label for="r-phone">Phone</label>
+</fieldset>
+
+<div role="radiogroup" aria-labelledby="rg-label">
+  <span id="rg-label">Theme</span>
+  <div role="radio" aria-checked="true" tabindex="0">Light</div>
+  <div role="radio" aria-checked="false" tabindex="-1">Dark</div>
+  <div role="radio" aria-checked="false" tabindex="-1">System</div>
+</div>
+
+<!-- SLIDER (single thumb) -->
+<input type="range" min="0" max="100" value="60" aria-label="Volume" />
+<div role="slider" aria-label="Brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75" tabindex="0"></div>
+
+<!-- SLIDER (multi-thumb) -->
+<div aria-label="Price range">
+  <div role="slider" aria-label="Minimum price" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="100" tabindex="0"></div>
+  <div role="slider" aria-label="Maximum price" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="800" tabindex="0"></div>
+</div>
+
+<!-- SPINBUTTON -->
+<input type="number" min="1" max="10" value="3" aria-label="Quantity" />
+<div role="spinbutton" aria-valuemin="1" aria-valuemax="10" aria-valuenow="3" aria-label="Page number" tabindex="0"></div>
+
+<!-- SWITCH -->
+<button role="switch" aria-checked="true" aria-label="Dark mode">
+  <span>Dark mode</span>
+</button>
+<button role="switch" aria-checked="false" aria-label="Notifications">
+  <span>Notifications</span>
+</button>
+
+<!-- METER -->
+<meter value="0.7" min="0" max="1" aria-label="Storage used">70%</meter>
+<div role="meter" aria-label="CPU usage" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">45%</div>
+
+<!-- LINK -->
+<a href="/dashboard">Go to dashboard</a>
+<a href="#section-2" aria-current="page">Current page link</a>
+<span role="link" tabindex="0">Custom link</span>
+
+<!-- TOOLTIP -->
+<button aria-describedby="tip-1">Help</button>
+<div role="tooltip" id="tip-1">Opens the help center</div>
+<button data-tooltip="Copy to clipboard">Copy</button>
+
+<!-- TABLE -->
+<table aria-label="Sales data">
+  <thead>
+    <tr>
+      <th scope="col">Product</th>
+      <th scope="col">Q1</th>
+      <th scope="col">Q2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Widget A</td>
+      <td>1,200</td>
+      <td>1,450</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- GRID (interactive) -->
+<div role="grid" aria-label="Spreadsheet" aria-rowcount="10" aria-colcount="5">
+  <div role="rowgroup">
+    <div role="row">
+      <div role="columnheader" aria-sort="ascending">Name</div>
+      <div role="columnheader">Value</div>
+    </div>
+  </div>
+  <div role="rowgroup">
+    <div role="row" aria-selected="false">
+      <div role="gridcell">Alpha</div>
+      <div role="gridcell">42</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEED -->
+<section role="feed" aria-busy="false" aria-label="News articles">
+  <article aria-labelledby="a1-title" aria-describedby="a1-meta">
+    <h3 id="a1-title">Breaking: New accessibility standards released</h3>
+    <p id="a1-meta">Published 2 hours ago</p>
+    <p>The W3C has released updated ARIA guidelines...</p>
+  </article>
+  <article aria-labelledby="a2-title">
+    <h3 id="a2-title">How to test for WCAG compliance</h3>
+    <p>A comprehensive guide to accessibility auditing...</p>
+  </article>
+</section>
+
+<!-- TREE VIEW -->
+<ul role="tree" aria-label="File system">
+  <li role="treeitem" aria-expanded="true" aria-level="1">
+    <span>src/</span>
+    <ul role="group">
+      <li role="treeitem" aria-level="2">
+        <span>components/</span>
+        <ul role="group">
+          <li role="treeitem" aria-level="3"><span>Button.jsx</span></li>
+          <li role="treeitem" aria-level="3"><span>Input.jsx</span></li>
+        </ul>
+      </li>
+      <li role="treeitem" aria-level="2"><span>App.jsx</span></li>
+    </ul>
+  </li>
+</ul>
+
+<!-- TREEGRID -->
+<div role="treegrid" aria-label="Folder contents">
+  <div role="row" aria-level="1" aria-expanded="true" aria-setsize="2" aria-posinset="1">
+    <div role="gridcell">Documents</div>
+    <div role="gridcell">—</div>
+  </div>
+  <div role="row" aria-level="2" aria-setsize="3" aria-posinset="1">
+    <div role="gridcell">Resume.pdf</div>
+    <div role="gridcell">142 KB</div>
+  </div>
+</div>
+
+<!-- WINDOW SPLITTER -->
+<div role="separator" aria-orientation="vertical"
+  aria-valuenow="30" aria-valuemin="20" aria-valuemax="80"
+  aria-label="Resize panels" tabindex="0"></div>
+
+</main>
+
+<aside role="complementary" aria-label="Related content">
+  <p>See also: WCAG 2.1 guidelines</p>
+</aside>
+
+<footer role="contentinfo">
+  <p>&copy; 2026 Example Corp</p>
+</footer>`;
+
+function loadSample() {
+  document.getElementById('html-input').value = SAMPLE_HTML;
+  updateCount();
+}
+
+// ─── Bookmarklet / console script ────────────────────────────────────────────
+const CONSOLE_SCRIPT = `// DOM Widget Analyzer — browser console version
+// Run on any page to detect ARIA widget patterns
+
+(function(){
+  const PATTERNS = {
+    'Accordion': ['details','button[aria-expanded][aria-controls]','[role="region"][aria-labelledby]'],
+    'Alert': ['[role="alert"]','[role="status"]'],
+    'Alert dialog': ['[role="alertdialog"]'],
+    'Breadcrumb': ['[aria-label*="breadcrumb" i]','.breadcrumb'],
+    'Button': ['button','[role="button"]','input[type="button"]','input[type="submit"]'],
+    'Carousel': ['[aria-roledescription*="carousel" i]','.carousel','.swiper'],
+    'Checkbox': ['input[type="checkbox"]','[role="checkbox"]'],
+    'Combobox': ['[role="combobox"]','input[list]','input[aria-autocomplete]'],
+    'Dialog': ['[role="dialog"]','dialog','[aria-modal="true"]'],
+    'Disclosure': ['button[aria-expanded]:not([aria-controls])','summary'],
+    'Feed': ['[role="feed"]','[role="article"]'],
+    'Grid': ['[role="grid"]','[role="gridcell"]'],
+    'Landmark': ['header','nav','main','aside','footer','[role="banner"]','[role="navigation"]','[role="main"]'],
+    'Link': ['a[href]','[role="link"]'],
+    'Listbox': ['[role="listbox"]','[role="option"]'],
+    'Menu': ['[role="menu"]','[role="menubar"]','[role="menuitem"]'],
+    'Menu button': ['button[aria-haspopup="menu"]','[aria-haspopup="true"]'],
+    'Meter': ['meter','[role="meter"]'],
+    'Radio group': ['[role="radiogroup"]','[role="radio"]','input[type="radio"]'],
+    'Slider': ['input[type="range"]','[role="slider"]'],
+    'Spinbutton': ['[role="spinbutton"]','input[type="number"]'],
+    'Switch': ['[role="switch"]'],
+    'Table': ['table','[role="table"]','[role="gridcell"]'],
+    'Tabs': ['[role="tablist"]','[role="tab"]','[role="tabpanel"]'],
+    'Toolbar': ['[role="toolbar"]'],
+    'Tooltip': ['[role="tooltip"]','[aria-describedby]','[data-tooltip]'],
+    'Tree view': ['[role="tree"]','[role="treeitem"]'],
+    'Treegrid': ['[role="treegrid"]'],
+    'Window splitter': ['[role="separator"][aria-valuenow]']
+  };
+  
+  console.group('%c DOM Widget Analyzer ', 'background:#7c6af7;color:#fff;font-weight:700;padding:2px 8px;border-radius:4px');
+  let total = 0;
+  for (const [name, sels] of Object.entries(PATTERNS)) {
+    const found = new Set();
+    sels.forEach(s => { try { document.querySelectorAll(s).forEach(el => found.add(el)); } catch(e){} });
+    if (found.size) {
+      console.group(\`%c \${name} \`, 'background:#1a1a2e;color:#9a8aef;font-weight:600', \`→ \${found.size} found\`);
+      found.forEach(el => console.log(el));
+      console.groupEnd();
+      total += found.size;
+    }
+  }
+  console.log(\`Total: \${total} widget instances detected\`);
+  console.groupEnd();
+})();`;
+
+function showScript() {
+  document.getElementById('console-script').textContent = CONSOLE_SCRIPT;
+  const bm = `javascript:${encodeURIComponent('('+CONSOLE_SCRIPT+')')}`;
+  document.getElementById('bookmarklet-link').href = bm;
+  document.getElementById('script-modal').style.display = 'flex';
+}
+
+function hideScript() {
+  document.getElementById('script-modal').style.display = 'none';
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(CONSOLE_SCRIPT).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy script', 1500);
+  });
+}
+
+// Init
+document.getElementById('html-input').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyzeHTML();
+});
+</script>
+</body>
+</html>`;

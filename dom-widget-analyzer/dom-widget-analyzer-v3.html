@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOM Widget Analyzer v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f0f13;color:#e2e2e8;min-height:100vh;font-size:13px;line-height:1.5}
+textarea,code,pre{font-family:'JetBrains Mono','Fira Code',monospace}
+.header{background:#0a0a0e;border-bottom:1px solid #1e1e2e;padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem}
+.logo-icon{width:28px;height:28px;background:#7c6af7;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.logo h1{font-size:14px;font-weight:600;color:#e2e2e8}
+.logo p{font-size:10px;color:#5a5a6a}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tier-legend{display:flex;gap:10px;align-items:center;border-left:1px solid #1e1e2e;margin-left:6px;padding-left:12px}
+.tl{display:flex;align-items:center;gap:4px;font-size:10px;color:#5a5a6a}
+.tl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.td-aria{background:#7c6af7}.td-semantic{background:#3bbc8e}.td-heuristic{background:#f0c040}.td-structural{background:#e07860}
+.badge{font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;border:1px solid;background:#1a1a2e;color:#7c6af7;border-color:#2a2a4a}
+.main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 58px)}
+.panel-left{border-right:1px solid #1e1e2e;display:flex;flex-direction:column;background:#0a0a0e}
+.panel-right{display:flex;flex-direction:column;overflow:hidden}
+.panel-bar{padding:9px 14px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;gap:7px;background:#0d0d18;flex-shrink:0;flex-wrap:wrap}
+.panel-label{font-size:10px;font-weight:700;color:#4a4a5a;text-transform:uppercase;letter-spacing:1px}
+.btn-row{display:flex;gap:4px;flex-wrap:wrap}
+button{cursor:pointer;border:none;outline:none;font:inherit}
+.btn{background:#1a1a2e;color:#7a7a8a;border:1px solid #2a2a3a;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:500;transition:all .1s}
+.btn:hover{background:#222238;color:#b2b2c2}
+.btn-go{background:#7c6af7;color:#fff;border-color:#7c6af7;padding:5px 14px;font-size:11px;font-weight:600}
+.btn-go:hover{background:#9080ff}
+.btn-ghost{background:transparent;color:#4a4a5a;border:1px solid transparent;padding:3px 9px;border-radius:5px;font-size:11px}
+.btn-ghost:hover{background:#1a1a2e;color:#8a8a9a;border-color:#2a2a3a}
+textarea{flex:1;background:#0a0a0e;color:#b8b8c8;border:none;resize:none;padding:12px 14px;font-size:11px;line-height:1.75;outline:none;width:100%}
+textarea::placeholder{color:#282838}
+.panel-foot{padding:7px 14px;border-top:1px solid #1e1e2e;display:flex;align-items:center;gap:8px;background:#0d0d18}
+.charcount{font-size:10px;color:#3a3a4a;margin-left:auto}
+.results-scroll{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:#3a3a4a;text-align:center}
+.empty-state p{font-size:12px;max-width:220px;line-height:1.5}
+
+/* View toggle */
+.view-toggle{display:flex;gap:4px}
+.vt{font-size:10px;padding:3px 9px;border-radius:4px;border:1px solid #2a2a3a;background:#1a1a2e;color:#5a5a6a;cursor:pointer;font-weight:600;transition:all .1s}
+.vt.on{background:#2a2048;color:#b8aaff;border-color:#4a3a8a}
+.vt:hover:not(.on){color:#9a9aaa;border-color:#3a3a5a}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sum-card{background:#0d0d18;border:1px solid #1e1e2e;border-radius:7px;padding:9px 11px}
+.sum-title{font-size:9px;font-weight:700;color:#3a3a4a;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.sum-nums{display:flex;gap:14px}
+.snum{text-align:center}
+.snum-n{font-size:17px;font-weight:700;line-height:1}
+.snum-l{font-size:9px;color:#4a4a5a;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.c-purple{color:#9a8aef}.c-teal{color:#3bbc8e}.c-blue{color:#4f9ef8}.c-coral{color:#f07a5a}
+.c-amber{color:#c8a030}.c-green{color:#5aba6a}.c-pink{color:#d87848}.c-gray{color:#6a8aaf}
+
+/* Tier + cat filter rows */
+.filter-row{display:flex;gap:4px;flex-wrap:wrap}
+.fb{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid #2a2a3a;background:#1a1a2e;color:#5a5a6a;cursor:pointer;font-weight:600;transition:all .1s}
+.fb:hover{color:#9b9bab;border-color:#3a3a5a}
+.fb.on{color:#fff;border-color:transparent}
+.fb-all.on{background:#2a2a4a;color:#e2e2e8}
+.fb-structure.on{background:#2a1d5a;color:#b8aaff}
+.fb-nav.on{background:#0d2a1e;color:#5de4aa}
+.fb-input.on{background:#0d1e3a;color:#78b8ff}
+.fb-overlay.on{background:#2a1206;color:#f0aa78}
+.tier-filter{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.tier-lbl{font-size:9px;color:#3a3a4a;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+.tf{font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid;cursor:pointer;font-weight:600;background:transparent}
+.tf-aria{color:#7c6af7;border-color:#2a2a4a}.tf-aria.on{background:#1a1030;border-color:#4a3a8a}
+.tf-semantic{color:#3bbc8e;border-color:#1a3a28}.tf-semantic.on{background:#0a2018;border-color:#2a6a48}
+.tf-heuristic{color:#d0a030;border-color:#3a2e00}.tf-heuristic.on{background:#1a1800;border-color:#6a5a00}
+.tf-structural{color:#d07050;border-color:#3a1e18}.tf-structural.on{background:#1a0e0a;border-color:#6a3828}
+
+/* Section divider */
+.section-divider{display:flex;align-items:center;gap:8px;padding:4px 0 2px}
+.section-divider-line{flex:1;height:1px;background:#1a1a2a}
+.section-divider-label{font-size:9px;font-weight:700;color:#3a3a5a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+
+/* Widget cards */
+.wcard{background:#0d0d18;border:1px solid #1e1e2e;border-radius:7px;overflow:hidden;transition:border-color .1s}
+.wcard:hover{border-color:#252535}
+.wcard[data-cat="structure"]{border-left:2px solid #4a3a8a}
+.wcard[data-cat="nav"]{border-left:2px solid #1a6a4a}
+.wcard[data-cat="input"]{border-left:2px solid #1a3a6a}
+.wcard[data-cat="overlay"]{border-left:2px solid #6a2a12}
+.card-hd{padding:8px 11px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.card-hd:hover{background:#101020}
+.card-name{font-size:12px;font-weight:600;color:#b2b2c2;flex:1}
+.cat-badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.cat-structure .cat-badge{background:#1a1030;color:#9a8aef;border:1px solid #2a1a5a}
+.cat-nav .cat-badge{background:#0a1e14;color:#4ac88a;border:1px solid #1a4a2a}
+.cat-input .cat-badge{background:#0a1428;color:#5898e8;border:1px solid #1a2a5a}
+.cat-overlay .cat-badge{background:#1e0a04;color:#d87848;border:1px solid #4a1a08}
+.card-count{font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:#1a1a2e;color:#7c6af7;border:1px solid #2a2a4a;min-width:24px;text-align:center}
+.chevron{color:#2a2a3a;font-size:9px;transition:transform .12s;flex-shrink:0}
+.chevron.open{transform:rotate(90deg)}
+.card-bd{border-top:1px solid #121220;display:none}
+.card-bd.open{display:block}
+
+/* DOM group cards */
+.gcard{background:#0d0d18;border:1px solid #1e1e2e;border-radius:7px;overflow:hidden;transition:border-color .1s}
+.gcard:hover{border-color:#252535}
+.gcard-hd{padding:8px 11px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.gcard-hd:hover{background:#101020}
+.gcard-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gcard-name{font-size:12px;font-weight:600;color:#b2b2c2;flex:1}
+.gcard-count{font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:#1a1a2e;color:#5898e8;border:1px solid #1a2a4a;min-width:24px;text-align:center}
+.gcard-bd{border-top:1px solid #121220;display:none}
+.gcard-bd.open{display:block}
+
+/* Instances */
+.inst-list{max-height:300px;overflow-y:auto}
+.inst{padding:6px 11px;border-bottom:1px solid #0e0e1a;display:flex;flex-direction:column;gap:3px}
+.inst:last-child{border-bottom:none}
+.inst:hover{background:#07070f}
+.inst-row1{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.el-tag{font-size:10px;font-weight:700;background:#0d0a1e;color:#9a8aef;padding:0px 5px;border-radius:3px;font-family:monospace;border:1px solid #1e1a3e;white-space:nowrap}
+.el-tag-dom{background:#091420;color:#5898e8;border:1px solid #0e2040}
+.hint-text{font-size:11px;color:#5a5a6a;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inst-row2{display:flex;gap:3px;flex-wrap:wrap}
+.attr-chip{font-size:9.5px;font-family:monospace;padding:0px 5px;border-radius:2px;background:#0d0d20;color:#6b8af7;border:1px solid #1a1a30;white-space:nowrap}
+.cls-chip{font-size:9.5px;padding:0px 5px;border-radius:2px;background:#0d1a0d;color:#4a9a5a;border:1px solid #1a2a1a;white-space:nowrap;font-family:monospace}
+.inst-text{font-size:10px;color:#303040;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.tier-pill{font-size:9px;padding:0px 5px;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.tp-aria{background:#1a1030;color:#9a8aef;border:1px solid #3a2a7a}
+.tp-semantic{background:#0a1e14;color:#3bbc8e;border:1px solid #1a4a2a}
+.tp-heuristic{background:#1a1800;color:#c8a030;border:1px solid #3a2e00}
+.tp-structural{background:#180a06;color:#c06848;border:1px solid #3a1a10}
+.issue-warn{font-size:9px;padding:0px 5px;border-radius:3px;background:#1a1000;color:#c8a030;border:1px solid #3a2a00;white-space:nowrap}
+.issue-info{font-size:9px;padding:0px 5px;border-radius:3px;background:#001224;color:#4f9ef8;border:1px solid #00244a;white-space:nowrap}
+.show-more{padding:5px;font-size:10px;color:#4f9ef8;cursor:pointer;text-align:center;border-top:1px solid #0e0e1a}
+.show-more:hover{background:#07070f;color:#7cbdff}
+.no-results{text-align:center;padding:20px;font-size:11px;color:#3a3a4a}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#0a0a0e}
+::-webkit-scrollbar-thumb{background:#242434;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#343444}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-icon">⬡</div>
+  <div class="logo">
+    <h1>DOM Widget Analyzer <span style="font-size:10px;color:#3a3a4a;font-weight:400">v3</span></h1>
+    <p>Widget extraction → remaining DOM nodes · zero duplication</p>
+  </div>
+  <div class="tier-legend">
+    <div class="tl"><div class="tl-dot td-aria"></div>ARIA</div>
+    <div class="tl"><div class="tl-dot td-semantic"></div>Semantic</div>
+    <div class="tl"><div class="tl-dot td-heuristic"></div>Class/Attr</div>
+    <div class="tl"><div class="tl-dot td-structural"></div>Structural</div>
+  </div>
+  <div class="header-right"><span class="badge">30 widget patterns</span></div>
+</div>
+
+<div class="main">
+  <div class="panel-left">
+    <div class="panel-bar">
+      <span class="panel-label">HTML Input</span>
+      <div class="btn-row">
+        <button class="btn" onclick="loadSample('aria')">ARIA sample</button>
+        <button class="btn" onclick="loadSample('noaria')">No-ARIA sample</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+    <textarea id="hi" spellcheck="false" oninput="updateCount()"
+placeholder="Paste any HTML here — with or without ARIA.
+
+Pass 1 → Widget extraction (30 ARIA patterns)
+  Detected via role=, aria-*, class names, DOM structure
+
+Pass 2 → Remaining DOM nodes (every unclaimed element)
+  Grouped by: Form Controls · Landmark Regions
+  Document Structure · Data Presentation
+  Live Regions · Multimedia · Text & Inline
+  Interactive · Generic Containers · Special
+
+No element appears twice. ⌘↵ to analyze."></textarea>
+    <div class="panel-foot">
+      <button class="btn-go" onclick="run()">Analyze DOM →</button>
+      <span style="font-size:10px;color:#2a2a3a">⌘↵</span>
+      <span class="charcount" id="cc">0 chars</span>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="panel-bar" id="results-bar" style="display:none">
+      <span class="panel-label">Results</span>
+      <div class="view-toggle">
+        <button class="vt on" id="vt-all"      onclick="setView('all',this)">All</button>
+        <button class="vt"    id="vt-widgets"  onclick="setView('widgets',this)">Widgets</button>
+        <button class="vt"    id="vt-dom"      onclick="setView('dom',this)">DOM Nodes</button>
+      </div>
+      <span id="rsummary" style="font-size:10px;color:#3a3a4a;margin-left:auto"></span>
+    </div>
+    <div class="results-scroll" id="rs">
+      <div class="empty-state" id="es">
+        <div style="font-size:28px;opacity:.3">⬡</div>
+        <p>Paste HTML and run — or load a sample to see extraction in action</p>
+      </div>
+      <div id="rc" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = { ARIA:'aria', SEM:'semantic', HEUR:'heuristic', STRUCT:'structural' };
+const TIER_LABEL = { aria:'ARIA', semantic:'Semantic', heuristic:'Class/Attr', structural:'Structural' };
+const CATS = { structure:'Structure', nav:'Navigation', input:'Input', overlay:'Overlay' };
+const SKIP_TAGS = new Set(['html','head','body','meta','script','style','link','title','base','noscript','template','br','wbr']);
+
+// ─── PASS 1: Widget definitions ──────────────────────────────────────────────
+const WIDGETS = [
+{id:'accordion',name:'Accordion',cat:'structure',rules:[
+  {sel:'details',tier:T.SEM,hint:'Native <details> element'},
+  {sel:'button[aria-expanded][aria-controls]',tier:T.ARIA,hint:'ARIA accordion trigger'},
+  {sel:'[role="region"][aria-labelledby]',tier:T.ARIA,hint:'ARIA accordion panel'},
+  {sel:'[class*="accordion"]',tier:T.HEUR,hint:'Accordion class'},
+  {sel:'[data-bs-toggle="collapse"]',tier:T.HEUR,hint:'Bootstrap 5 collapse'},
+  {sel:'[data-toggle="collapse"]',tier:T.HEUR,hint:'Bootstrap 4 collapse'},
+  {sel:'[class*="collapse"]:not(table)',tier:T.HEUR,hint:'Collapse class'},
+]},
+{id:'alert',name:'Alert / Banner',cat:'overlay',rules:[
+  {sel:'[role="alert"]',tier:T.ARIA,hint:'ARIA alert (assertive)'},
+  {sel:'[role="status"]',tier:T.ARIA,hint:'ARIA status (polite)'},
+  {sel:'[aria-live="assertive"]',tier:T.ARIA,hint:'Assertive live region'},
+  {sel:'[aria-live="polite"]',tier:T.ARIA,hint:'Polite live region'},
+  {sel:'[class*="alert"]:not(script)',tier:T.HEUR,hint:'Alert class'},
+  {sel:'[class*="toast"]',tier:T.HEUR,hint:'Toast notification'},
+  {sel:'[class*="snackbar"]',tier:T.HEUR,hint:'Snackbar (Material)'},
+  {sel:'[class*="notification"]',tier:T.HEUR,hint:'Notification class'},
+  {sel:'[class*="banner"]:not(header)',tier:T.HEUR,hint:'Banner class'},
+]},
+{id:'alertdialog',name:'Alert dialog',cat:'overlay',rules:[
+  {sel:'[role="alertdialog"]',tier:T.ARIA,hint:'ARIA alertdialog'},
+  {sel:'[class*="confirm"][class*="modal"]',tier:T.HEUR,hint:'Confirm modal'},
+]},
+{id:'breadcrumb',name:'Breadcrumb',cat:'nav',rules:[
+  {sel:'[aria-label*="breadcrumb" i]',tier:T.ARIA,hint:'Breadcrumb via aria-label'},
+  {sel:'[aria-label*="you are here" i]',tier:T.ARIA,hint:'Breadcrumb location'},
+  {sel:'[class*="breadcrumb"]',tier:T.HEUR,hint:'Breadcrumb class'},
+  {sel:'[itemtype*="BreadcrumbList"]',tier:T.HEUR,hint:'Schema.org BreadcrumbList'},
+  {sel:'nav ol a ~ a',tier:T.STRUCT,hint:'Nav ordered list pattern'},
+]},
+{id:'button',name:'Button',cat:'input',rules:[
+  {sel:'button',tier:T.SEM,hint:'Native <button>'},
+  {sel:'[role="button"]',tier:T.ARIA,hint:'ARIA button role'},
+  {sel:'input[type="button"]',tier:T.SEM,hint:'Input[type=button]'},
+  {sel:'input[type="submit"]',tier:T.SEM,hint:'Submit button'},
+  {sel:'input[type="reset"]',tier:T.SEM,hint:'Reset button'},
+  {sel:'a[class*="btn"]:not([role])',tier:T.HEUR,hint:'Anchor styled as button'},
+  {sel:'[class*="button"]:not(button):not([role])',tier:T.HEUR,hint:'Non-button with button class'},
+]},
+{id:'carousel',name:'Carousel',cat:'structure',rules:[
+  {sel:'[aria-roledescription*="carousel" i]',tier:T.ARIA,hint:'ARIA carousel'},
+  {sel:'[class*="carousel"]',tier:T.HEUR,hint:'Carousel class'},
+  {sel:'[class*="swiper"]',tier:T.HEUR,hint:'Swiper.js'},
+  {sel:'.slick-slider',tier:T.HEUR,hint:'Slick slider'},
+  {sel:'[data-bs-ride="carousel"]',tier:T.HEUR,hint:'Bootstrap 5 carousel'},
+  {sel:'[data-ride="carousel"]',tier:T.HEUR,hint:'Bootstrap 4 carousel'},
+]},
+{id:'checkbox',name:'Checkbox',cat:'input',rules:[
+  {sel:'input[type="checkbox"]',tier:T.SEM,hint:'Native checkbox'},
+  {sel:'[role="checkbox"]',tier:T.ARIA,hint:'ARIA checkbox'},
+]},
+{id:'combobox',name:'Combobox',cat:'input',rules:[
+  {sel:'[role="combobox"]',tier:T.ARIA,hint:'ARIA combobox'},
+  {sel:'input[list]',tier:T.SEM,hint:'Native datalist combobox'},
+  {sel:'input[aria-autocomplete]',tier:T.ARIA,hint:'Autocomplete input'},
+  {sel:'[class*="autocomplete"]',tier:T.HEUR,hint:'Autocomplete class'},
+  {sel:'[class*="typeahead"]',tier:T.HEUR,hint:'Typeahead class'},
+  {sel:'[class*="autosuggest"]',tier:T.HEUR,hint:'Autosuggest class'},
+]},
+{id:'dialog',name:'Dialog (modal)',cat:'overlay',rules:[
+  {sel:'dialog',tier:T.SEM,hint:'Native <dialog>'},
+  {sel:'[role="dialog"]',tier:T.ARIA,hint:'ARIA dialog'},
+  {sel:'[aria-modal="true"]',tier:T.ARIA,hint:'aria-modal attribute'},
+  {sel:'[class*="modal"]:not([class*="modal-item"]):not([class*="modal-content"])',tier:T.HEUR,hint:'Modal class'},
+  {sel:'[class*="lightbox"]',tier:T.HEUR,hint:'Lightbox class'},
+  {sel:'[class*="dialog"]:not(dialog)',tier:T.HEUR,hint:'Dialog class'},
+]},
+{id:'disclosure',name:'Disclosure',cat:'structure',rules:[
+  {sel:'summary',tier:T.SEM,hint:'Native <summary> trigger'},
+  {sel:'button[aria-expanded]:not([aria-controls])',tier:T.ARIA,hint:'Disclosure trigger'},
+  {sel:'[aria-expanded][aria-pressed]',tier:T.ARIA,hint:'Toggle button'},
+  {sel:'[class*="show-hide"]',tier:T.HEUR,hint:'Show/hide class'},
+]},
+{id:'feed',name:'Feed',cat:'structure',rules:[
+  {sel:'[role="feed"]',tier:T.ARIA,hint:'ARIA feed'},
+  {sel:'[role="article"]',tier:T.ARIA,hint:'ARIA article'},
+  {sel:'article',tier:T.SEM,hint:'Native <article>'},
+  {sel:'[class*="feed"]',tier:T.HEUR,hint:'Feed class'},
+  {sel:'[class*="timeline"]',tier:T.HEUR,hint:'Timeline class'},
+]},
+{id:'grid',name:'Grid',cat:'structure',rules:[
+  {sel:'[role="grid"]',tier:T.ARIA,hint:'ARIA grid'},
+  {sel:'[role="gridcell"]',tier:T.ARIA,hint:'ARIA gridcell'},
+  {sel:'[role="columnheader"]',tier:T.ARIA,hint:'Column header'},
+  {sel:'[role="rowheader"]',tier:T.ARIA,hint:'Row header'},
+  {sel:'[class*="ag-grid"]',tier:T.HEUR,hint:'AG Grid'},
+  {sel:'[class*="datagrid"]',tier:T.HEUR,hint:'DataGrid class'},
+]},
+{id:'landmark',name:'Landmark',cat:'structure',rules:[
+  {sel:'header',tier:T.SEM,hint:'<header> landmark'},
+  {sel:'nav',tier:T.SEM,hint:'<nav> landmark'},
+  {sel:'main',tier:T.SEM,hint:'<main> landmark'},
+  {sel:'aside',tier:T.SEM,hint:'<aside> landmark'},
+  {sel:'footer',tier:T.SEM,hint:'<footer> landmark'},
+  {sel:'[role="banner"]',tier:T.ARIA,hint:'Banner landmark'},
+  {sel:'[role="navigation"]',tier:T.ARIA,hint:'Nav landmark'},
+  {sel:'[role="main"]',tier:T.ARIA,hint:'Main landmark'},
+  {sel:'[role="complementary"]',tier:T.ARIA,hint:'Complementary landmark'},
+  {sel:'[role="contentinfo"]',tier:T.ARIA,hint:'Content info landmark'},
+  {sel:'[role="search"]',tier:T.ARIA,hint:'Search landmark'},
+  {sel:'section[aria-label],section[aria-labelledby]',tier:T.ARIA,hint:'Named section landmark'},
+]},
+{id:'link',name:'Link',cat:'nav',rules:[
+  {sel:'a[href]',tier:T.SEM,hint:'Native anchor link'},
+  {sel:'[role="link"]',tier:T.ARIA,hint:'ARIA link'},
+  {sel:'a[aria-current]',tier:T.ARIA,hint:'Current-page link'},
+]},
+{id:'listbox',name:'Listbox',cat:'input',rules:[
+  {sel:'[role="listbox"]',tier:T.ARIA,hint:'ARIA listbox'},
+  {sel:'[role="option"]',tier:T.ARIA,hint:'ARIA option'},
+  {sel:'select',tier:T.SEM,hint:'Native <select>'},
+  {sel:'[class*="listbox"]',tier:T.HEUR,hint:'Listbox class'},
+]},
+{id:'menu',name:'Menu / Menubar',cat:'overlay',rules:[
+  {sel:'[role="menu"]',tier:T.ARIA,hint:'ARIA menu'},
+  {sel:'[role="menubar"]',tier:T.ARIA,hint:'ARIA menubar'},
+  {sel:'[role="menuitem"]',tier:T.ARIA,hint:'ARIA menuitem'},
+  {sel:'[role="menuitemcheckbox"]',tier:T.ARIA,hint:'Checkable menuitem'},
+  {sel:'[role="menuitemradio"]',tier:T.ARIA,hint:'Radio menuitem'},
+  {sel:'[class*="dropdown-menu"]',tier:T.HEUR,hint:'Dropdown menu (Bootstrap)'},
+  {sel:'[class*="context-menu"]',tier:T.HEUR,hint:'Context menu class'},
+]},
+{id:'menubutton',name:'Menu button',cat:'overlay',rules:[
+  {sel:'button[aria-haspopup="menu"]',tier:T.ARIA,hint:'Button → menu'},
+  {sel:'button[aria-haspopup="true"]',tier:T.ARIA,hint:'Button → popup'},
+  {sel:'[aria-haspopup="listbox"]',tier:T.ARIA,hint:'Button → listbox'},
+  {sel:'[class*="dropdown-toggle"]',tier:T.HEUR,hint:'Dropdown toggle'},
+  {sel:'[data-bs-toggle="dropdown"]',tier:T.HEUR,hint:'Bootstrap 5 dropdown'},
+  {sel:'[data-toggle="dropdown"]',tier:T.HEUR,hint:'Bootstrap 4 dropdown'},
+]},
+{id:'meter',name:'Meter',cat:'input',rules:[
+  {sel:'meter',tier:T.SEM,hint:'Native <meter>'},
+  {sel:'[role="meter"]',tier:T.ARIA,hint:'ARIA meter'},
+  {sel:'progress',tier:T.SEM,hint:'Native <progress>'},
+  {sel:'[class*="progress-bar"]',tier:T.HEUR,hint:'Progress bar class'},
+  {sel:'[class*="gauge"]',tier:T.HEUR,hint:'Gauge class'},
+]},
+{id:'radiogroup',name:'Radio group',cat:'input',rules:[
+  {sel:'[role="radiogroup"]',tier:T.ARIA,hint:'ARIA radiogroup'},
+  {sel:'[role="radio"]',tier:T.ARIA,hint:'ARIA radio'},
+  {sel:'input[type="radio"]',tier:T.SEM,hint:'Native radio'},
+  {sel:'fieldset',tier:T.SEM,hint:'Fieldset group'},
+  {sel:'[class*="radio-group"]',tier:T.HEUR,hint:'Radio group class'},
+]},
+{id:'slider',name:'Slider',cat:'input',rules:[
+  {sel:'input[type="range"]',tier:T.SEM,hint:'Native range input'},
+  {sel:'[role="slider"]',tier:T.ARIA,hint:'ARIA slider'},
+  {sel:'[class*="range-slider"]',tier:T.HEUR,hint:'Range slider class'},
+  {sel:'[class*="noUi-handle"]',tier:T.HEUR,hint:'noUiSlider handle'},
+]},
+{id:'multislider',name:'Slider (multi-thumb)',cat:'input',custom:true},
+{id:'spinbutton',name:'Spinbutton',cat:'input',rules:[
+  {sel:'[role="spinbutton"]',tier:T.ARIA,hint:'ARIA spinbutton'},
+  {sel:'input[type="number"]',tier:T.SEM,hint:'Native number input'},
+  {sel:'[class*="spinbutton"]',tier:T.HEUR,hint:'Spinbutton class'},
+]},
+{id:'switch',name:'Switch',cat:'input',rules:[
+  {sel:'[role="switch"]',tier:T.ARIA,hint:'ARIA switch'},
+  {sel:'input[type="checkbox"][class*="switch"]',tier:T.HEUR,hint:'Checkbox as switch'},
+  {sel:'input[type="checkbox"][class*="toggle"]',tier:T.HEUR,hint:'Checkbox as toggle'},
+  {sel:'[class*="toggle-switch"]',tier:T.HEUR,hint:'Toggle switch class'},
+  {sel:'[class*="form-switch"]',tier:T.HEUR,hint:'Bootstrap form-switch'},
+  {sel:'label[class*="switch"] input[type="checkbox"]',tier:T.STRUCT,hint:'Checkbox in switch label'},
+  {sel:'label[class*="toggle"] input[type="checkbox"]',tier:T.STRUCT,hint:'Checkbox in toggle label'},
+]},
+{id:'table',name:'Table',cat:'structure',rules:[
+  {sel:'table',tier:T.SEM,hint:'Native <table>'},
+  {sel:'[role="table"]',tier:T.ARIA,hint:'ARIA table'},
+  {sel:'[role="row"]',tier:T.ARIA,hint:'ARIA row'},
+  {sel:'[role="cell"]',tier:T.ARIA,hint:'ARIA cell'},
+  {sel:'[class*="data-table"]',tier:T.HEUR,hint:'Data table class'},
+  {sel:'[class*="MuiTable"]',tier:T.HEUR,hint:'Material UI Table'},
+]},
+{id:'tabs',name:'Tabs',cat:'nav',rules:[
+  {sel:'[role="tablist"]',tier:T.ARIA,hint:'ARIA tablist'},
+  {sel:'[role="tab"]',tier:T.ARIA,hint:'ARIA tab'},
+  {sel:'[role="tabpanel"]',tier:T.ARIA,hint:'ARIA tabpanel'},
+  {sel:'[class*="nav-tabs"]',tier:T.HEUR,hint:'Bootstrap nav-tabs'},
+  {sel:'[class*="tab-list"]',tier:T.HEUR,hint:'Tab list class'},
+  {sel:'[class*="tab-panel"]',tier:T.HEUR,hint:'Tab panel class'},
+  {sel:'[data-tab],[data-tabs]',tier:T.HEUR,hint:'Data-tab attribute'},
+]},
+{id:'toolbar',name:'Toolbar',cat:'nav',rules:[
+  {sel:'[role="toolbar"]',tier:T.ARIA,hint:'ARIA toolbar'},
+  {sel:'[class*="toolbar"]',tier:T.HEUR,hint:'Toolbar class'},
+  {sel:'[class*="action-bar"]',tier:T.HEUR,hint:'Action bar class'},
+]},
+{id:'tooltip',name:'Tooltip',cat:'overlay',rules:[
+  {sel:'[role="tooltip"]',tier:T.ARIA,hint:'ARIA tooltip'},
+  {sel:'[aria-describedby]',tier:T.ARIA,hint:'Described-by reference'},
+  {sel:'[data-tooltip]',tier:T.HEUR,hint:'data-tooltip attr'},
+  {sel:'[data-bs-toggle="tooltip"]',tier:T.HEUR,hint:'Bootstrap 5 tooltip'},
+  {sel:'[data-tippy-content]',tier:T.HEUR,hint:'Tippy.js tooltip'},
+  {sel:'[class*="tooltip"]',tier:T.HEUR,hint:'Tooltip class'},
+]},
+{id:'treeview',name:'Tree view',cat:'structure',rules:[
+  {sel:'[role="tree"]',tier:T.ARIA,hint:'ARIA tree'},
+  {sel:'[role="treeitem"]',tier:T.ARIA,hint:'ARIA treeitem'},
+  {sel:'[class*="file-tree"]',tier:T.HEUR,hint:'File tree class'},
+  {sel:'[class*="tree-view"]',tier:T.HEUR,hint:'Tree-view class'},
+]},
+{id:'treegrid',name:'Treegrid',cat:'structure',rules:[
+  {sel:'[role="treegrid"]',tier:T.ARIA,hint:'ARIA treegrid'},
+  {sel:'[class*="treegrid"]',tier:T.HEUR,hint:'Treegrid class'},
+]},
+{id:'windowsplitter',name:'Window splitter',cat:'structure',rules:[
+  {sel:'[role="separator"][aria-valuenow]',tier:T.ARIA,hint:'Focusable separator (splitter)'},
+  {sel:'[role="separator"][tabindex]',tier:T.ARIA,hint:'Tabbable separator'},
+  {sel:'[class*="splitter"]',tier:T.HEUR,hint:'Splitter class'},
+  {sel:'[class*="resizer"]',tier:T.HEUR,hint:'Resizer class'},
+  {sel:'[class*="gutter"]',tier:T.HEUR,hint:'Split.js gutter'},
+  {sel:'[class*="divider"][draggable]',tier:T.HEUR,hint:'Draggable divider'},
+]},
+];
+
+// ─── PASS 2: DOM element groups ───────────────────────────────────────────────
+// Ordered by specificity — first match claims the element.
+const DOM_GROUPS = [
+{id:'form-controls',name:'Form Controls',color:'#4f9ef8',items:[
+  {sel:'input[type="text"]',        hint:'Text input'},
+  {sel:'input[type="email"]',       hint:'Email input'},
+  {sel:'input[type="tel"]',         hint:'Tel input'},
+  {sel:'input[type="url"]',         hint:'URL input'},
+  {sel:'input[type="password"]',    hint:'Password input'},
+  {sel:'input[type="search"]',      hint:'Search input'},
+  {sel:'input[type="number"]',      hint:'Number input'},
+  {sel:'input[type="range"]',       hint:'Range/slider input'},
+  {sel:'input[type="checkbox"]',    hint:'Checkbox input'},
+  {sel:'input[type="radio"]',       hint:'Radio input'},
+  {sel:'input[type="color"]',       hint:'Color picker'},
+  {sel:'input[type="date"]',        hint:'Date input'},
+  {sel:'input[type="datetime-local"]',hint:'Datetime-local input'},
+  {sel:'input[type="month"]',       hint:'Month input'},
+  {sel:'input[type="week"]',        hint:'Week input'},
+  {sel:'input[type="file"]',        hint:'File upload input'},
+  {sel:'input[type="image"]',       hint:'Image button input'},
+  {sel:'input[type="button"]',      hint:'Button input'},
+  {sel:'input[type="submit"]',      hint:'Submit input'},
+  {sel:'input[type="reset"]',       hint:'Reset input'},
+  {sel:'input[type="hidden"]',      hint:'Hidden input'},
+  {sel:'input:not([type])',         hint:'Input (implicit text)'},
+  {sel:'select',                    hint:'Select dropdown'},
+  {sel:'textarea',                  hint:'Textarea'},
+  {sel:'datalist',                  hint:'Datalist (autocomplete)'},
+  {sel:'optgroup',                  hint:'Option group'},
+  {sel:'option',                    hint:'Select option'},
+  {sel:'fieldset',                  hint:'Fieldset group'},
+  {sel:'label',                     hint:'Form label'},
+  {sel:'legend',                    hint:'Fieldset legend'},
+  {sel:'output',                    hint:'Form output element'},
+  {sel:'button',                    hint:'Button element'},
+  {sel:'form',                      hint:'Form element'},
+]},
+{id:'interactive',name:'Interactive Controls',color:'#7c6af7',items:[
+  {sel:'details',                   hint:'Details/disclosure element'},
+  {sel:'summary',                   hint:'Summary trigger'},
+  {sel:'a[href]',                   hint:'Anchor link (href)'},
+  {sel:'a:not([href])',             hint:'Anchor without href'},
+  {sel:'[tabindex]:not(button):not(input):not(select):not(textarea):not(a)',hint:'Focusable custom element'},
+]},
+{id:'landmark',name:'Landmark Regions',color:'#e07860',items:[
+  {sel:'header',                    hint:'Page/section header'},
+  {sel:'footer',                    hint:'Page/section footer'},
+  {sel:'main',                      hint:'Main content area'},
+  {sel:'nav',                       hint:'Navigation region'},
+  {sel:'aside',                     hint:'Aside / complementary'},
+  {sel:'section[aria-label],section[aria-labelledby]',hint:'Labeled section (landmark)'},
+  {sel:'address',                   hint:'Contact address block'},
+  {sel:'[role="banner"]',           hint:'Banner landmark'},
+  {sel:'[role="contentinfo"]',      hint:'Content info landmark'},
+  {sel:'[role="navigation"]',       hint:'Navigation landmark'},
+  {sel:'[role="main"]',             hint:'Main landmark'},
+  {sel:'[role="complementary"]',    hint:'Complementary landmark'},
+  {sel:'[role="region"]',           hint:'Named region landmark'},
+  {sel:'[role="search"]',           hint:'Search landmark'},
+  {sel:'[role="form"]',             hint:'Form landmark'},
+]},
+{id:'doc-structure',name:'Document Structure',color:'#c8a030',items:[
+  {sel:'h1',hint:'Heading level 1'},{sel:'h2',hint:'Heading level 2'},
+  {sel:'h3',hint:'Heading level 3'},{sel:'h4',hint:'Heading level 4'},
+  {sel:'h5',hint:'Heading level 5'},{sel:'h6',hint:'Heading level 6'},
+  {sel:'[role="heading"]',          hint:'ARIA heading'},
+  {sel:'article',                   hint:'Article element'},
+  {sel:'[role="article"]',          hint:'ARIA article'},
+  {sel:'figure',                    hint:'Figure element'},
+  {sel:'figcaption',                hint:'Figure caption'},
+  {sel:'[role="figure"]',           hint:'ARIA figure'},
+  {sel:'hr',                        hint:'Thematic break'},
+  {sel:'[role="separator"]:not([aria-valuenow]):not([tabindex])',hint:'Decorative separator'},
+  {sel:'blockquote',                hint:'Block quotation'},
+  {sel:'p',                         hint:'Paragraph'},
+  {sel:'pre',                       hint:'Preformatted text'},
+  {sel:'dl',                        hint:'Description list'},
+  {sel:'dt',                        hint:'Description term'},
+  {sel:'dd',                        hint:'Description detail'},
+  {sel:'ol',                        hint:'Ordered list'},
+  {sel:'ul',                        hint:'Unordered list'},
+  {sel:'li',                        hint:'List item'},
+]},
+{id:'data-presentation',name:'Data Presentation',color:'#3bbc8e',items:[
+  {sel:'table',                     hint:'Table element'},
+  {sel:'caption',                   hint:'Table caption'},
+  {sel:'colgroup',                  hint:'Column group'},
+  {sel:'col',                       hint:'Table column'},
+  {sel:'thead',                     hint:'Table head group'},
+  {sel:'tbody',                     hint:'Table body group'},
+  {sel:'tfoot',                     hint:'Table foot group'},
+  {sel:'tr',                        hint:'Table row'},
+  {sel:'th',                        hint:'Table header cell'},
+  {sel:'td',                        hint:'Table data cell'},
+  {sel:'[role="table"]',            hint:'ARIA table'},
+  {sel:'[role="rowgroup"]',         hint:'ARIA row group'},
+  {sel:'[role="row"]',              hint:'ARIA row'},
+  {sel:'[role="cell"]',             hint:'ARIA cell'},
+  {sel:'[role="columnheader"]',     hint:'ARIA column header'},
+  {sel:'[role="rowheader"]',        hint:'ARIA row header'},
+  {sel:'[role="gridcell"]',         hint:'ARIA gridcell'},
+  {sel:'progress',                  hint:'Progress element'},
+  {sel:'[role="progressbar"]',      hint:'ARIA progressbar'},
+  {sel:'meter',                     hint:'Meter element'},
+  {sel:'[role="meter"]',            hint:'ARIA meter'},
+  {sel:'[aria-hidden="true"]',      hint:'Hidden from assistive tech'},
+  {sel:'[aria-selected]',           hint:'Selectable element'},
+  {sel:'[aria-readonly]',           hint:'Read-only element'},
+]},
+{id:'live-regions',name:'Live Region Roles',color:'#f07a5a',items:[
+  {sel:'[role="status"]',           hint:'Status live region'},
+  {sel:'[role="log"]',              hint:'Log live region'},
+  {sel:'[role="timer"]',            hint:'Timer live region'},
+  {sel:'[role="marquee"]',          hint:'Marquee live region'},
+  {sel:'[role="alert"]',            hint:'Alert live region'},
+  {sel:'[aria-live]:not([role="alert"]):not([role="status"])',hint:'Custom aria-live region'},
+  {sel:'[aria-atomic="true"]',      hint:'Atomic live update'},
+]},
+{id:'multimedia',name:'Multimedia & Graphics',color:'#d87848',items:[
+  {sel:'img',                       hint:'Image element'},
+  {sel:'svg',                       hint:'SVG graphic'},
+  {sel:'canvas',                    hint:'Canvas element'},
+  {sel:'audio',                     hint:'Audio element'},
+  {sel:'video',                     hint:'Video element'},
+  {sel:'picture',                   hint:'Responsive picture'},
+  {sel:'source',                    hint:'Media source'},
+  {sel:'track',                     hint:'Text track (video/audio)'},
+  {sel:'iframe',                    hint:'Inline frame'},
+  {sel:'embed',                     hint:'Embedded content'},
+  {sel:'object',                    hint:'Plugin/object element'},
+  {sel:'map',                       hint:'Image map container'},
+  {sel:'area',                      hint:'Image map area'},
+]},
+{id:'inline-text',name:'Text & Inline',color:'#8a8aaa',items:[
+  {sel:'abbr',hint:'Abbreviation'},{sel:'b',hint:'Bold (stylistic)'},
+  {sel:'strong',hint:'Strong importance'},{sel:'i',hint:'Italic (stylistic)'},
+  {sel:'em',hint:'Emphasis'},{sel:'mark',hint:'Highlighted text'},
+  {sel:'code',hint:'Inline code'},{sel:'kbd',hint:'Keyboard input'},
+  {sel:'samp',hint:'Sample output'},{sel:'var',hint:'Variable name'},
+  {sel:'cite',hint:'Citation'},{sel:'dfn',hint:'Definition term'},
+  {sel:'q',hint:'Inline quotation'},{sel:'del',hint:'Deleted text'},
+  {sel:'ins',hint:'Inserted text'},{sel:'sub',hint:'Subscript'},
+  {sel:'sup',hint:'Superscript'},{sel:'time',hint:'Time/date element'},
+  {sel:'small',hint:'Small print'},{sel:'s',hint:'Strikethrough'},
+  {sel:'u',hint:'Underline'},{sel:'bdi',hint:'Bidirectional isolate'},
+  {sel:'bdo',hint:'Bidirectional override'},{sel:'ruby',hint:'Ruby annotation'},
+  {sel:'rt',hint:'Ruby text'},{sel:'span',hint:'Inline span'},
+]},
+{id:'special',name:'Special / Utility',color:'#6b8af7',items:[
+  {sel:'[role="application"]',      hint:'Application (disables AT reading)'},
+  {sel:'[role="presentation"]',     hint:'Presentation (removes semantics)'},
+  {sel:'[role="none"]',             hint:'None (removes semantics)'},
+  {sel:'[role="group"]',            hint:'Generic group'},
+  {sel:'[role="generic"]',          hint:'Generic landmark'},
+  {sel:'[role="img"]',              hint:'Image role on non-img element'},
+  {sel:'[role="math"]',             hint:'Mathematical expression'},
+  {sel:'[role="term"]',             hint:'Term (definition)'},
+  {sel:'[role="definition"]',       hint:'Definition content'},
+  {sel:'[aria-owns]',               hint:'aria-owns reference'},
+  {sel:'[aria-details]',            hint:'aria-details reference'},
+  {sel:'[aria-flowto]',             hint:'aria-flowto reference'},
+]},
+{id:'generics',name:'Generic Containers',color:'#3a3a5a',items:[
+  {sel:'section',                   hint:'Unlabeled section'},
+  {sel:'div',                       hint:'Division/block container'},
+]},
+];
+
+// ─── Structural heuristic detectors ──────────────────────────────────────────
+function structuralDetectors(doc) {
+  const extra = [];
+  // Nested list → tree view
+  const nestedRoots = new Set();
+  doc.querySelectorAll('ul > li > ul, ul > li > ol, ol > li > ul, ol > li > ol').forEach(inner => {
+    const root = inner.closest('ul, ol');
+    if (root && !root.closest('[role="tree"]') && !root.closest('[class*="tree"]')) nestedRoots.add(root);
+  });
+  if (nestedRoots.size) extra.push({widgetId:'treeview', instances:[...nestedRoots].map(el => ({
+    el, tier:T.STRUCT, hint:'Nested list (ul>li>ul) — tree view pattern', selector:'ul>li>ul', issues:[]
+  }))});
+  // nav > ul → menu
+  const navLists = [...doc.querySelectorAll('nav > ul, nav > ol')].filter(ul =>
+    !ul.closest('[aria-label*="breadcrumb" i]') && !ul.closest('[class*="breadcrumb"]'));
+  if (navLists.length) extra.push({widgetId:'menu', instances:navLists.map(el => ({
+    el, tier:T.STRUCT, hint:'Nav list (nav>ul) — navigation menu', selector:'nav>ul', issues:[]
+  }))});
+  // button + sibling div → disclosure
+  const discPairs = [];
+  doc.querySelectorAll('button + div, button + section').forEach(sib => {
+    const btn = sib.previousElementSibling;
+    if (btn && !btn.hasAttribute('aria-expanded') && !btn.hasAttribute('aria-haspopup'))
+      discPairs.push({el:btn, tier:T.STRUCT, hint:'button + div/section sibling — disclosure pattern', selector:'button+div', issues:[]});
+  });
+  if (discPairs.length) extra.push({widgetId:'disclosure', instances:discPairs});
+  // dl → accordion candidate
+  const dls = [...doc.querySelectorAll('dl')];
+  if (dls.length) extra.push({widgetId:'accordion', instances:dls.map(el => ({
+    el, tier:T.STRUCT, hint:'<dl> (description list) — FAQ/accordion pattern', selector:'dl', issues:[]
+  }))});
+  // div > repeated card divs → feed
+  const cardLists = [];
+  doc.querySelectorAll('div, section, ul').forEach(parent => {
+    const ch = [...parent.children];
+    if (ch.length < 2 || ch.length > 20) return;
+    const ok = ch.every(c =>
+      (c.tagName==='DIV'||c.tagName==='LI'||c.tagName==='ARTICLE') &&
+      c.querySelector('img,picture') && c.querySelector('p,span,h2,h3,h4'));
+    if (ok && !parent.closest('[role]') && !parent.closest('[class*="carousel"]'))
+      cardLists.push({el:parent, tier:T.STRUCT, hint:`${parent.tagName.toLowerCase()} with ${ch.length} card-like children — feed/card list`, selector:'div>div(img+text)', issues:[]});
+  });
+  if (cardLists.length) extra.push({widgetId:'feed', instances:cardLists});
+  // div[id] targeted by a[href=#id] → tab panels
+  const linkedIds = new Set();
+  doc.querySelectorAll('a[href^="#"],[data-bs-target]').forEach(t => {
+    const ref = (t.getAttribute('href')||t.getAttribute('data-bs-target')||'').replace('#','');
+    if (ref) linkedIds.add(ref);
+  });
+  const panelCandidates = [...doc.querySelectorAll('div[id],section[id]')]
+    .filter(el => linkedIds.has(el.id) && !el.getAttribute('role'));
+  if (panelCandidates.length >= 2) extra.push({widgetId:'tabs', instances:panelCandidates.map(el => ({
+    el, tier:T.STRUCT, hint:`#${el.id} targeted by anchor — possible tab panel`, selector:'div[id] ← a[href=#id]', issues:[]
+  }))});
+  // label > checkbox + span → switch
+  doc.querySelectorAll('label:not([class*="switch"]):not([class*="toggle"]) input[type="checkbox"]').forEach(inp => {
+    const lbl = inp.closest('label');
+    if (lbl && lbl.querySelectorAll('span').length >= 1 && !lbl.querySelector('[class*="checkbox"]'))
+      extra.push({widgetId:'switch', instances:[{el:lbl, tier:T.STRUCT,
+        hint:'label > checkbox + span — possible switch', selector:'label>input+span', issues:[]}]});
+  });
+  return extra;
+}
+
+// ─── Multi-thumb slider detector ─────────────────────────────────────────────
+function detectMultiThumb(doc) {
+  const instances = [];
+  // ARIA-based: multiple [role="slider"] in same parent
+  const ariaMap = new Map();
+  doc.querySelectorAll('[role="slider"]').forEach(s => {
+    const p = s.parentElement; if (!p) return;
+    ariaMap.set(p, (ariaMap.get(p)||0)+1);
+  });
+  ariaMap.forEach((count, parent) => {
+    if (count >= 2) instances.push({el:parent, tier:T.ARIA, issues:[],
+      hint:`${count} ARIA sliders in same parent — multi-thumb`, selector:`[role=slider]×${count}`});
+  });
+  // Heuristic: 2+ range inputs in same parent
+  const rangeMap = new Map();
+  doc.querySelectorAll('input[type="range"]').forEach(r => {
+    const p = r.parentElement; if (!p) return;
+    rangeMap.set(p, (rangeMap.get(p)||0)+1);
+  });
+  rangeMap.forEach((count, parent) => {
+    if (count >= 2) instances.push({el:parent, tier:T.HEUR, issues:[],
+      hint:`${count} range inputs in same parent — multi-thumb slider`, selector:`input[range]×${count}`});
+  });
+  return instances;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const ATTR_KEEP = new Set([
+  'role','aria-label','aria-labelledby','aria-describedby','aria-expanded','aria-haspopup',
+  'aria-controls','aria-selected','aria-checked','aria-pressed','aria-modal','aria-orientation',
+  'aria-valuenow','aria-valuemin','aria-valuemax','aria-valuetext','aria-autocomplete',
+  'aria-roledescription','aria-current','aria-live','aria-atomic','aria-posinset','aria-setsize',
+  'aria-level','aria-rowspan','aria-colspan','aria-sort','aria-colindex','aria-rowindex',
+  'aria-rowcount','aria-colcount','aria-multiselectable','aria-details','aria-owns',
+  'aria-disabled','aria-hidden','aria-required','aria-invalid','aria-errormessage',
+  'aria-flowto','type','tabindex','for','alt','autocomplete','name','href','value',
+  'data-toggle','data-bs-toggle','data-bs-ride','data-tooltip','data-tippy-content',
+  'data-tab','draggable','lang','title'
+]);
+function getAttrs(el) {
+  try {
+    return [...el.attributes].filter(a => ATTR_KEEP.has(a.name)).map(a => `${a.name}="${a.value}"`);
+  } catch(e) { return []; }
+}
+function getClasses(el) {
+  try {
+    const c = el.className;
+    return (c && typeof c === 'string') ? c.split(/\s+/).filter(x => x.length > 0 && x.length < 50) : [];
+  } catch(e) { return []; }
+}
+function getPreview(el) {
+  try {
+    const t = (el.textContent||'').replace(/\s+/g,' ').trim();
+    return t.length > 65 ? t.slice(0,65)+'…' : t;
+  } catch(e) { return ''; }
+}
+function issueCheck(widgetId, el) {
+  const issues = [];
+  const tag = el.tagName ? el.tagName.toLowerCase() : '';
+  const missingName = !el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby') &&
+    !(el.textContent||'').trim() && !el.getAttribute('title') && !el.getAttribute('alt');
+  if (missingName && ['dialog','alertdialog','grid','listbox','menu','toolbar','tree','tablist'].includes(widgetId))
+    issues.push({type:'warn',msg:'No accessible name'});
+  if (widgetId==='button' && el.getAttribute('role')==='button' && tag!=='button' && !el.hasAttribute('tabindex'))
+    issues.push({type:'warn',msg:'role=button missing tabindex'});
+  if (widgetId==='dialog' && !el.getAttribute('aria-labelledby') && !el.getAttribute('aria-label'))
+    issues.push({type:'warn',msg:'Dialog needs accessible label'});
+  if (widgetId==='link' && tag==='a' && !el.getAttribute('href'))
+    issues.push({type:'warn',msg:'Anchor missing href'});
+  if (widgetId==='link') {
+    const t = (el.textContent||'').trim().toLowerCase();
+    if (['click here','read more','more','here','link'].includes(t))
+      issues.push({type:'warn',msg:'Non-descriptive link text'});
+  }
+  if (widgetId==='slider' && !el.hasAttribute('aria-valuenow') && tag!=='input')
+    issues.push({type:'warn',msg:'Missing aria-valuenow'});
+  if (widgetId==='checkbox' && !el.id && tag==='input')
+    issues.push({type:'info',msg:'No associated label (needs id+for)'});
+  return issues;
+}
+function runRules(doc, widget, claimed) {
+  const seen = new Set();
+  const results = [];
+  for (const rule of widget.rules) {
+    let els;
+    try { els = [...doc.querySelectorAll(rule.sel)]; } catch(e) { continue; }
+    for (const el of els) {
+      if (claimed.has(el) || seen.has(el) || SKIP_TAGS.has((el.tagName||'').toLowerCase())) continue;
+      seen.add(el);
+      claimed.add(el);
+      results.push({el, tier:rule.tier, hint:rule.hint, selector:rule.sel, issues:issueCheck(widget.id, el)});
+    }
+  }
+  return results;
+}
+
+// ─── Main analysis ────────────────────────────────────────────────────────────
+function analyzeAll(doc) {
+  const claimed = new Set();
+
+  // PASS 1: Widgets
+  const structExtras = structuralDetectors(doc);
+  const extraMap = {};
+  structExtras.forEach(({widgetId, instances}) => {
+    if (!extraMap[widgetId]) extraMap[widgetId] = [];
+    extraMap[widgetId].push(...instances);
+  });
+  const foundWidgets = [];
+  for (const w of WIDGETS) {
+    let instances = [];
+    if (w.custom) {
+      if (w.id === 'multislider') instances = detectMultiThumb(doc);
+    } else {
+      instances = runRules(doc, w, claimed);
+    }
+    // Claim custom instances
+    instances.forEach(i => { if (i.el) claimed.add(i.el); });
+    // Merge structural extras (dedup)
+    if (extraMap[w.id]) {
+      extraMap[w.id].forEach(i => {
+        if (i.el && !claimed.has(i.el)) {
+          claimed.add(i.el);
+          instances.push({...i, issues: i.issues||[]});
+        }
+      });
+    }
+    if (instances.length) foundWidgets.push({widget:w, instances});
+  }
+
+  // PASS 2: DOM element groups
+  const foundGroups = [];
+  for (const group of DOM_GROUPS) {
+    const groupSeen = new Set();
+    const instances = [];
+    for (const item of group.items) {
+      let els;
+      try { els = [...doc.querySelectorAll(item.sel)]; } catch(e) { continue; }
+      for (const el of els) {
+        const tag = (el.tagName||'').toLowerCase();
+        if (claimed.has(el) || groupSeen.has(el)) continue;
+        if (tag === 'html' || tag === 'head' || tag === 'body') continue;
+        claimed.add(el);
+        groupSeen.add(el);
+        instances.push({el, hint:item.hint, selector:item.sel, issues:[]});
+      }
+    }
+    if (instances.length) foundGroups.push({group, instances});
+  }
+
+  return {foundWidgets, foundGroups};
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let _state = null;
+let _view = 'all';          // 'all' | 'widgets' | 'dom'
+let _activeCat = 'all';
+let _activeTiers = new Set(['aria','semantic','heuristic','structural']);
+let _activeGroup = 'all';
+
+function run() {
+  const html = document.getElementById('hi').value.trim();
+  if (!html) { alert('Paste HTML first.'); return; }
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  _state = analyzeAll(doc);
+  _activeCat = 'all'; _activeGroup = 'all';
+  renderResults();
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderResults() {
+  if (!_state) return;
+  const {foundWidgets, foundGroups} = _state;
+  document.getElementById('es').style.display = 'none';
+  document.getElementById('results-bar').style.display = 'flex';
+  const rc = document.getElementById('rc');
+  rc.style.display = 'block';
+
+  const totalW = foundWidgets.reduce((a,b)=>a+b.instances.filter(i=>_activeTiers.has(i.tier)).length, 0);
+  const totalD = foundGroups.reduce((a,b)=>a+b.instances.length, 0);
+  const totalAll = totalW + totalD;
+  document.getElementById('rsummary').textContent = `${totalAll} nodes total`;
+
+  // Cat counts for widgets
+  const catCount = {structure:0,nav:0,input:0,overlay:0};
+  foundWidgets.forEach(({widget,instances}) => {
+    catCount[widget.cat] = (catCount[widget.cat]||0) + instances.filter(i=>_activeTiers.has(i.tier)).length;
+  });
+  const tierCount = {aria:0,semantic:0,heuristic:0,structural:0};
+  foundWidgets.forEach(({instances}) => {
+    instances.forEach(i => { if(_activeTiers.has(i.tier)) tierCount[i.tier]=(tierCount[i.tier]||0)+1; });
+  });
+
+  let html = `
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="sum-title">Widgets detected</div>
+      <div class="sum-nums">
+        <div class="snum"><div class="snum-n c-purple">${foundWidgets.length}</div><div class="snum-l">Types</div></div>
+        <div class="snum"><div class="snum-n c-blue">${totalW}</div><div class="snum-l">Instances</div></div>
+        <div class="snum"><div class="snum-n c-teal">${foundWidgets.reduce((a,b)=>a+b.instances.filter(i=>i.issues&&i.issues.length).length,0)}</div><div class="snum-l">Issues</div></div>
+      </div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-title">DOM nodes (unclaimed)</div>
+      <div class="sum-nums">
+        <div class="snum"><div class="snum-n c-amber">${foundGroups.length}</div><div class="snum-l">Groups</div></div>
+        <div class="snum"><div class="snum-n c-pink">${totalD}</div><div class="snum-l">Elements</div></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Widget section
+  if (_view === 'all' || _view === 'widgets') {
+    const visibleWidgets = foundWidgets.filter(({widget,instances}) => {
+      if (_activeCat !== 'all' && widget.cat !== _activeCat) return false;
+      return instances.filter(i=>_activeTiers.has(i.tier)).length > 0;
+    });
+    html += `
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-label">⬡ Widgets — ${totalW} instances / ${foundWidgets.length} types</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div class="filter-row">
+      <button class="fb fb-all ${_activeCat==='all'?'on':''}" onclick="setCat('all')">All (${foundWidgets.reduce((a,b)=>a+b.instances.length,0)})</button>
+      <button class="fb fb-structure ${_activeCat==='structure'?'on':''}" onclick="setCat('structure')">Structure (${catCount.structure})</button>
+      <button class="fb fb-nav ${_activeCat==='nav'?'on':''}" onclick="setCat('nav')">Nav (${catCount.nav})</button>
+      <button class="fb fb-input ${_activeCat==='input'?'on':''}" onclick="setCat('input')">Input (${catCount.input})</button>
+      <button class="fb fb-overlay ${_activeCat==='overlay'?'on':''}" onclick="setCat('overlay')">Overlay (${catCount.overlay})</button>
+    </div>
+    <div class="tier-filter">
+      <span class="tier-lbl">Tier:</span>
+      <button class="tf tf-aria ${_activeTiers.has('aria')?'on':''}" onclick="toggleTier('aria')">ARIA (${tierCount.aria||0})</button>
+      <button class="tf tf-semantic ${_activeTiers.has('semantic')?'on':''}" onclick="toggleTier('semantic')">Semantic (${tierCount.semantic||0})</button>
+      <button class="tf tf-heuristic ${_activeTiers.has('heuristic')?'on':''}" onclick="toggleTier('heuristic')">Class/Attr (${tierCount.heuristic||0})</button>
+      <button class="tf tf-structural ${_activeTiers.has('structural')?'on':''}" onclick="toggleTier('structural')">Structural (${tierCount.structural||0})</button>
+    </div>`;
+    if (visibleWidgets.length === 0) {
+      html += `<div class="no-results">No widgets matched current filters.</div>`;
+    } else {
+      for (const {widget,instances} of visibleWidgets) {
+        const fi = instances.filter(i=>_activeTiers.has(i.tier));
+        if (fi.length) html += buildWidgetCard(widget, fi);
+      }
+    }
+  }
+
+  // DOM nodes section
+  if (_view === 'all' || _view === 'dom') {
+    const visibleGroups = foundGroups.filter(({group}) =>
+      _activeGroup === 'all' || group.id === _activeGroup);
+    html += `
+    <div class="section-divider" style="margin-top:8px">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-label">◈ DOM Nodes — ${totalD} unclaimed elements / ${foundGroups.length} groups</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div class="filter-row">
+      <button class="fb fb-all ${_activeGroup==='all'?'on':''}" onclick="setGroup('all')">All groups (${totalD})</button>
+      ${foundGroups.map(({group,instances})=>`<button class="fb ${_activeGroup===group.id?'on':''}" style="${_activeGroup===group.id?`background:${group.color}22;color:${group.color};border-color:${group.color}66`:''}" onclick="setGroup('${group.id}')">${group.name} (${instances.length})</button>`).join('')}
+    </div>`;
+    if (visibleGroups.length === 0) {
+      html += `<div class="no-results">No DOM nodes matched current group filter.</div>`;
+    } else {
+      for (const {group,instances} of visibleGroups) {
+        html += buildGroupCard(group, instances);
+      }
+    }
+  }
+
+  rc.innerHTML = html;
+}
+
+function buildInstHTML(instances, isWidget) {
+  const MAX = 5;
+  let html = '';
+  instances.forEach((inst, i) => {
+    const hidden = i >= MAX ? 'style="display:none"' : '';
+    const el = inst.el;
+    const tag = (el.tagName||'?').toLowerCase();
+    const attrs = getAttrs(el);
+    const classes = getClasses(el).slice(0,5);
+    const preview = getPreview(el);
+    const attrsHTML = attrs.map(a=>`<span class="attr-chip">${esc(a)}</span>`).join('');
+    const classHTML = classes.map(c=>`<span class="cls-chip">.${esc(c)}</span>`).join('');
+    const issHTML = (inst.issues||[]).map(iss=>`<span class="issue-${iss.type}">${esc(iss.msg)}</span>`).join('');
+    const tierHTML = inst.tier ? `<span class="tier-pill tp-${inst.tier}">${TIER_LABEL[inst.tier]||inst.tier}</span>` : '';
+    html += `<div class="inst" ${hidden}>
+      <div class="inst-row1">
+        <span class="el-tag ${isWidget?'':'el-tag-dom'}">&lt;${esc(tag)}&gt;</span>
+        ${tierHTML}
+        <span class="hint-text">${esc(inst.hint)}</span>
+        ${issHTML}
+      </div>
+      ${(attrsHTML||classHTML)?`<div class="inst-row2">${attrsHTML}${classHTML}</div>`:''}
+      ${preview?`<div class="inst-text">"${esc(preview)}"</div>`:''}
+    </div>`;
+  });
+  const extra = instances.length - MAX;
+  const moreHTML = extra > 0 ? `<div class="show-more" onclick="showMore(this,${MAX})">▾ ${extra} more</div>` : '';
+  return `<div class="inst-list">${html}</div>${moreHTML}`;
+}
+
+function buildWidgetCard(widget, instances) {
+  const catClass = `cat-${widget.cat}`;
+  return `<div class="wcard ${catClass}" data-cat="${widget.cat}">
+    <div class="card-hd" onclick="toggleCard(this)">
+      <span class="card-name">${widget.name}</span>
+      <span class="cat-badge">${CATS[widget.cat]}</span>
+      <span class="card-count">${instances.length}</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="card-bd">${buildInstHTML(instances, true)}</div>
+  </div>`;
+}
+
+function buildGroupCard(group, instances) {
+  return `<div class="gcard">
+    <div class="gcard-hd" onclick="toggleCard(this)">
+      <span class="gcard-dot" style="background:${group.color}"></span>
+      <span class="gcard-name">${group.name}</span>
+      <span class="gcard-count" style="color:${group.color};border-color:${group.color}44">${instances.length}</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="gcard-bd" style="border-top:1px solid #121220;display:none">${buildInstHTML(instances, false)}</div>
+  </div>`;
+}
+
+function toggleCard(hd) {
+  const bd = hd.nextElementSibling;
+  const ch = hd.querySelector('.chevron');
+  const isOpen = bd.style.display !== 'block';
+  bd.style.display = isOpen ? 'block' : 'none';
+  if (ch) ch.classList.toggle('open', isOpen);
+}
+function showMore(btn) {
+  btn.previousElementSibling.querySelectorAll('.inst').forEach(el=>el.style.display='');
+  btn.remove();
+}
+function setView(v, btn) {
+  _view = v;
+  document.querySelectorAll('.vt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderResults();
+}
+function setCat(cat) { _activeCat = cat; renderResults(); }
+function setGroup(gid) { _activeGroup = gid; renderResults(); }
+function toggleTier(tier) {
+  if (_activeTiers.has(tier)) { if (_activeTiers.size > 1) _activeTiers.delete(tier); }
+  else _activeTiers.add(tier);
+  renderResults();
+}
+function updateCount() {
+  const v = document.getElementById('hi').value;
+  document.getElementById('cc').textContent = v.length.toLocaleString() + ' chars';
+}
+function clearAll() {
+  document.getElementById('hi').value = '';
+  document.getElementById('cc').textContent = '0 chars';
+  document.getElementById('es').style.display = '';
+  document.getElementById('rc').style.display = 'none';
+  document.getElementById('rc').innerHTML = '';
+  document.getElementById('results-bar').style.display = 'none';
+  document.getElementById('rsummary').textContent = '';
+  _state = null;
+}
+
+// ─── Samples ──────────────────────────────────────────────────────────────────
+const SAMPLES = {
+aria:`<!-- Full ARIA-annotated page -->
+<html lang="en">
+<head><title>ARIA Sample</title></head>
+<body>
+<header role="banner">
+  <nav aria-label="Main navigation">
+    <a href="/" aria-current="page">Home</a>
+    <a href="/products">Products</a>
+    <button aria-haspopup="menu" aria-expanded="false">More ▾</button>
+    <ul role="menu"><li role="menuitem">About</li><li role="menuitem">Contact</li></ul>
+  </nav>
+</header>
+<main role="main" id="main">
+  <nav aria-label="Breadcrumb">
+    <ol><li><a href="/">Home</a></li><li aria-current="page">Dashboard</li></ol>
+  </nav>
+  <div role="alert">Session expires in 5 minutes.</div>
+  <div role="status">All systems operational.</div>
+  <!-- Accordion -->
+  <button aria-expanded="true" aria-controls="acc1">FAQ Section</button>
+  <div id="acc1" role="region" aria-labelledby="acc-h1">Answer content here</div>
+  <details><summary>Native accordion item</summary><p>Content inside details.</p></details>
+  <!-- Dialog -->
+  <dialog aria-labelledby="dlg-title" aria-modal="true">
+    <h2 id="dlg-title">Edit Profile</h2>
+    <form>
+      <label for="username">Username</label>
+      <input type="text" id="username" aria-required="true" aria-describedby="un-hint"/>
+      <span id="un-hint">Letters and numbers only</span>
+      <label for="bio">Bio</label>
+      <textarea id="bio" aria-required="false"></textarea>
+      <button type="submit">Save</button>
+      <button type="button">Cancel</button>
+    </form>
+  </dialog>
+  <button aria-haspopup="dialog">Open Profile Editor</button>
+  <!-- Tabs -->
+  <div role="tablist" aria-label="Settings panels">
+    <button role="tab" aria-selected="true" aria-controls="tp1" id="t1">General</button>
+    <button role="tab" aria-selected="false" aria-controls="tp2" id="t2">Security</button>
+    <button role="tab" aria-selected="false" aria-controls="tp3" id="t3">Billing</button>
+  </div>
+  <div role="tabpanel" id="tp1" aria-labelledby="t1">
+    <h3>General settings</h3>
+    <label class="toggle-switch"><input type="checkbox" role="switch" aria-checked="true" /> Dark mode</label>
+    <select aria-label="Language"><option>English</option><option>French</option></select>
+  </div>
+  <div role="tabpanel" id="tp2" aria-labelledby="t2" hidden>Security settings</div>
+  <div role="tabpanel" id="tp3" aria-labelledby="t3" hidden>Billing settings</div>
+  <!-- Toolbar -->
+  <div role="toolbar" aria-label="Text editor">
+    <button aria-pressed="false" aria-label="Bold">B</button>
+    <button aria-pressed="false" aria-label="Italic">I</button>
+    <button aria-pressed="true" aria-label="Underline">U</button>
+    <div role="separator" aria-hidden="true"></div>
+    <input type="color" aria-label="Text color" />
+  </div>
+  <!-- Sliders -->
+  <input type="range" min="0" max="100" value="60" aria-label="Volume"/>
+  <div aria-label="Price range">
+    <div role="slider" aria-label="Min price" aria-valuemin="0" aria-valuemax="500" aria-valuenow="50" tabindex="0"></div>
+    <div role="slider" aria-label="Max price" aria-valuemin="0" aria-valuemax="500" aria-valuenow="400" tabindex="0"></div>
+  </div>
+  <!-- Radio group -->
+  <div role="radiogroup" aria-labelledby="rg1">
+    <span id="rg1">Subscription plan</span>
+    <div role="radio" aria-checked="false" tabindex="0">Free</div>
+    <div role="radio" aria-checked="true" tabindex="-1">Pro</div>
+    <div role="radio" aria-checked="false" tabindex="-1">Enterprise</div>
+  </div>
+  <!-- Tree -->
+  <ul role="tree" aria-label="Project files">
+    <li role="treeitem" aria-expanded="true">src/
+      <ul role="group">
+        <li role="treeitem" aria-expanded="false">components/</li>
+        <li role="treeitem">App.tsx</li>
+      </ul>
+    </li>
+  </ul>
+  <!-- Table -->
+  <table aria-label="Sales report" aria-rowcount="100">
+    <thead><tr><th scope="col" aria-sort="ascending">Product</th><th scope="col">Q1</th><th scope="col">Q2</th></tr></thead>
+    <tbody><tr><td>Widget A</td><td>1,200</td><td>1,450</td></tr></tbody>
+  </table>
+  <!-- Feed / articles -->
+  <section role="feed" aria-label="News">
+    <article aria-labelledby="a1-h" aria-posinset="1" aria-setsize="20">
+      <h3 id="a1-h">Breaking: New accessibility spec released</h3>
+      <p>The W3C published updated ARIA guidelines today...</p>
+    </article>
+  </section>
+  <!-- Tooltip -->
+  <button aria-describedby="help-tip">Help</button>
+  <div role="tooltip" id="help-tip">Opens documentation</div>
+  <!-- Meter -->
+  <meter value="0.72" min="0" max="1" aria-label="Disk usage">72%</meter>
+  <!-- Window splitter -->
+  <div role="separator" aria-orientation="vertical" aria-valuenow="35" aria-valuemin="10" aria-valuemax="90" tabindex="0" aria-label="Resize sidebar"></div>
+  <!-- Grid -->
+  <div role="grid" aria-label="Spreadsheet" aria-rowcount="50" aria-colcount="8">
+    <div role="rowgroup"><div role="row">
+      <div role="columnheader" aria-sort="none">Name</div>
+      <div role="columnheader">Value</div>
+    </div></div>
+    <div role="rowgroup"><div role="row" aria-selected="false">
+      <div role="gridcell">Alpha</div>
+      <div role="gridcell">42</div>
+    </div></div>
+  </div>
+  <!-- Switch -->
+  <button role="switch" aria-checked="true">Enable notifications</button>
+  <!-- Combobox -->
+  <input type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cb-list" aria-label="Search countries"/>
+  <ul id="cb-list" role="listbox"><li role="option" aria-selected="false">Australia</li><li role="option">Canada</li></ul>
+  <!-- Spinbutton -->
+  <div role="spinbutton" aria-valuemin="1" aria-valuemax="10" aria-valuenow="3" tabindex="0" aria-label="Quantity"></div>
+  <!-- Images -->
+  <img src="chart.png" alt="Monthly revenue chart showing 20% growth" />
+  <svg role="img" aria-label="Company logo"><title>Acme Corp</title><circle cx="50" cy="50" r="40"/></svg>
+  <figure>
+    <img src="product.jpg" alt="Product photograph" />
+    <figcaption>Product Model X-200</figcaption>
+  </figure>
+  <!-- Links -->
+  <a href="https://example.com" aria-label="Visit our partner site">Partner</a>
+  <a href="#section2" aria-current="location">Skip to content</a>
+  <!-- Carousel -->
+  <section aria-roledescription="carousel" aria-label="Featured items" role="region">
+    <div aria-roledescription="slide" role="group" aria-label="1 of 3">Item 1</div>
+    <button aria-label="Previous slide">‹</button>
+    <button aria-label="Next slide">›</button>
+  </section>
+  <!-- Treegrid -->
+  <div role="treegrid" aria-label="File system">
+    <div role="row" aria-level="1" aria-expanded="true"><div role="gridcell">Documents/</div></div>
+    <div role="row" aria-level="2"><div role="gridcell">Resume.pdf</div></div>
+  </div>
+  <!-- Form controls -->
+  <form aria-labelledby="contact-heading">
+    <h2 id="contact-heading">Contact us</h2>
+    <fieldset><legend>Contact details</legend>
+      <label for="email">Email</label>
+      <input type="email" id="email" aria-required="true" aria-invalid="false" autocomplete="email"/>
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" aria-label="Phone number"/>
+      <label for="subject">Subject</label>
+      <select id="subject" aria-required="true">
+        <optgroup label="Support"><option>Technical issue</option><option>Billing</option></optgroup>
+        <optgroup label="Sales"><option>New account</option></optgroup>
+      </select>
+      <label for="message">Message</label>
+      <textarea id="message" aria-required="true" aria-describedby="msg-hint"></textarea>
+      <span id="msg-hint">Minimum 20 characters</span>
+      <input type="file" aria-label="Attach files" aria-required="false"/>
+      <input type="checkbox" id="consent" aria-required="true"/>
+      <label for="consent">I agree to the terms</label>
+      <button type="submit">Send message</button>
+    </fieldset>
+  </form>
+  <!-- Live regions -->
+  <div role="log" aria-live="polite" aria-label="Activity log"></div>
+  <div role="timer" aria-atomic="true" aria-label="Session timer">14:32</div>
+  <!-- Output -->
+  <output role="status" aria-live="polite" aria-label="Calculation result">$1,234.56</output>
+  <!-- Multimedia -->
+  <video aria-label="Product demo video" controls>
+    <source src="demo.mp4" type="video/mp4"/>
+    <track kind="subtitles" src="subtitles_en.vtt" srclang="en" label="English"/>
+  </video>
+  <audio aria-label="Podcast episode 42" controls><source src="ep42.mp3" type="audio/mpeg"/></audio>
+  <!-- Text content -->
+  <blockquote cite="https://w3.org"><p>The web is for everyone.</p></blockquote>
+  <p>This is a paragraph with <strong>strong text</strong>, <em>emphasis</em>, <mark>highlighted content</mark>, and a <abbr title="World Wide Web Consortium">W3C</abbr> abbreviation.</p>
+  <p>Visit <a href="https://example.com">example.com</a> for more. <code>const x = 1;</code> inline code here.</p>
+  <pre><code>function greet() {
+  return "Hello, World!";
+}</code></pre>
+  <address>Contact: <a href="mailto:info@example.com">info@example.com</a></address>
+</main>
+<aside role="complementary" aria-label="Related articles">
+  <h2>See also</h2>
+  <ul><li><a href="/article/1">WCAG 2.2 overview</a></li><li><a href="/article/2">ARIA best practices</a></li></ul>
+</aside>
+<footer role="contentinfo"><p>&copy; 2026 Example Corp. <a href="/privacy">Privacy policy</a></p></footer>
+</body></html>`,
+
+noaria:`<!-- No ARIA — pure semantic HTML + class-based detection -->
+<!DOCTYPE html>
+<html lang="en">
+<head><title>No-ARIA Sample</title></head>
+<body>
+<header>
+  <nav>
+    <ul class="nav-menu">
+      <li><a href="/">Home</a></li>
+      <li><a href="/shop">Shop</a>
+        <ul class="dropdown-menu">
+          <li><a href="/shop/new">New arrivals</a></li>
+          <li><a href="/shop/sale">Sale</a></li>
+        </ul>
+      </li>
+      <li><a href="/blog">Blog</a></li>
+    </ul>
+    <button class="dropdown-toggle" data-bs-toggle="dropdown">Account ▾</button>
+  </nav>
+</header>
+<main>
+  <!-- Breadcrumb via class -->
+  <nav class="breadcrumb">
+    <ol><li><a href="/">Home</a></li><li><a href="/shop">Shop</a></li><li>Headphones</li></ol>
+  </nav>
+  <!-- Alerts via class -->
+  <div class="alert alert-success">Order placed successfully!</div>
+  <div class="toast show">Saved to wishlist.</div>
+  <div class="snackbar">Copied!</div>
+  <!-- Accordion via Bootstrap classes -->
+  <div class="accordion">
+    <div class="accordion-item">
+      <h2><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq1">What is the return policy?</button></h2>
+      <div id="faq1" class="collapse show"><p>30-day free returns on all orders.</p></div>
+    </div>
+    <div class="accordion-item">
+      <h2><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">Do you ship internationally?</button></h2>
+      <div id="faq2" class="collapse"><p>Yes, to 50+ countries worldwide.</p></div>
+    </div>
+  </div>
+  <!-- FAQ as description list (structural) -->
+  <dl class="faq-list">
+    <dt>What payment methods do you accept?</dt>
+    <dd>Visa, Mastercard, PayPal, and Apple Pay.</dd>
+    <dt>Is there a loyalty program?</dt>
+    <dd>Yes, earn 1 point per dollar spent.</dd>
+  </dl>
+  <!-- Native details -->
+  <details>
+    <summary>Advanced filter options</summary>
+    <div>
+      <label><input type="checkbox" /> In stock only</label>
+      <label><input type="checkbox" checked /> Free shipping</label>
+    </div>
+  </details>
+  <!-- Modal via Bootstrap class -->
+  <div class="modal" id="cart-modal">
+    <div class="modal-dialog">
+      <div class="modal-header"><h2>Your cart</h2><button>✕</button></div>
+      <div class="modal-body">
+        <table class="table table-responsive">
+          <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            <tr><td>Headphones Pro</td><td><input type="number" min="1" max="10" value="1"/></td><td>$299</td></tr>
+            <tr><td>USB-C Cable</td><td><input type="number" min="1" max="10" value="2"/></td><td>$19</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-toggle="modal">Continue shopping</button>
+        <button class="btn btn-primary">Checkout</button>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cart-modal">View cart (3)</button>
+  <!-- Tabs via Bootstrap nav-tabs -->
+  <ul class="nav nav-tabs">
+    <li class="nav-item"><a class="nav-link active" href="#desc">Description</a></li>
+    <li class="nav-item"><a class="nav-link" href="#specs">Specs</a></li>
+    <li class="nav-item"><a class="nav-link" href="#reviews">Reviews (42)</a></li>
+  </ul>
+  <div id="desc" class="tab-panel">
+    <h3>Product description</h3>
+    <p>These premium over-ear headphones feature <strong>active noise cancellation</strong> and <em>40-hour battery life</em>.</p>
+    <blockquote><p>"Best headphones I've ever owned." — <cite>TechReview Weekly</cite></p></blockquote>
+    <p>Compatible with all devices via <abbr title="Universal Serial Bus Type-C">USB-C</abbr> or Bluetooth 5.3.</p>
+  </div>
+  <div id="specs" class="tab-panel" hidden>
+    <table><thead><tr><th>Spec</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Driver size</td><td>40mm</td></tr>
+      <tr><td>Frequency response</td><td>20Hz–20kHz</td></tr>
+      <tr><td>Battery</td><td>40 hours</td></tr>
+    </tbody></table>
+  </div>
+  <div id="reviews" class="tab-panel" hidden>Customer reviews...</div>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn" title="Bold"><b>B</b></button>
+    <button class="btn" title="Italic"><i>I</i></button>
+    <button class="btn" title="Underline"><u>U</u></button>
+    <select title="Font family"><option>Sans-serif</option><option>Serif</option></select>
+    <input type="color" title="Text color" value="#333333"/>
+  </div>
+  <!-- Switches via class -->
+  <label class="toggle-switch">
+    <input type="checkbox" checked/>
+    <span class="slider"></span>
+    <span>Enable notifications</span>
+  </label>
+  <div class="form-switch">
+    <input type="checkbox" class="form-check-input" id="darkmode"/>
+    <label for="darkmode">Dark mode</label>
+  </div>
+  <!-- Range sliders -->
+  <label>Volume <input type="range" min="0" max="100" value="70"/></label>
+  <div class="range-slider price-filter">
+    <p>Price range</p>
+    <input type="range" min="0" max="1000" value="50"/>
+    <input type="range" min="0" max="1000" value="800"/>
+  </div>
+  <!-- Radio group via fieldset -->
+  <fieldset>
+    <legend>Color</legend>
+    <label><input type="radio" name="color" value="black" checked/> Midnight Black</label>
+    <label><input type="radio" name="color" value="white"/> Arctic White</label>
+    <label><input type="radio" name="color" value="blue"/> Ocean Blue</label>
+  </fieldset>
+  <!-- Checkbox group -->
+  <fieldset>
+    <legend>Accessories</legend>
+    <label><input type="checkbox" name="case" checked/> Carrying case (+$29)</label>
+    <label><input type="checkbox" name="cable"/> Extra cable (+$15)</label>
+    <label><input type="checkbox" name="warranty"/> Extended warranty (+$49)</label>
+  </fieldset>
+  <!-- Progress / meter -->
+  <progress value="65" max="100">65%</progress>
+  <div class="progress"><div class="progress-bar" style="width:65%">65% charged</div></div>
+  <meter value="0.65" min="0" max="1">65%</meter>
+  <!-- Form with many input types -->
+  <form>
+    <fieldset>
+      <legend>Shipping details</legend>
+      <label for="fname">First name</label>
+      <input type="text" id="fname" name="fname" autocomplete="given-name"/>
+      <label for="lname">Last name</label>
+      <input type="text" id="lname" name="lname" autocomplete="family-name"/>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="email"/>
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone"/>
+      <label for="addr">Address</label>
+      <textarea id="addr" name="addr" rows="3"></textarea>
+      <label for="country">Country</label>
+      <select id="country" name="country">
+        <option value="">Select country</option>
+        <optgroup label="Americas">
+          <option value="us">United States</option>
+          <option value="ca">Canada</option>
+        </optgroup>
+        <optgroup label="Europe">
+          <option value="uk">United Kingdom</option>
+          <option value="de">Germany</option>
+        </optgroup>
+      </select>
+      <label for="dob">Date of birth</label>
+      <input type="date" id="dob" name="dob"/>
+      <label for="photo">Profile photo</label>
+      <input type="file" id="photo" name="photo" accept="image/*"/>
+      <input type="hidden" name="csrf_token" value="abc123"/>
+    </fieldset>
+    <label><input type="checkbox" name="agree"/> I accept the <a href="/terms">terms</a></label>
+    <button type="submit" class="btn btn-primary">Place order</button>
+    <button type="reset" class="btn">Reset</button>
+  </form>
+  <!-- Tree view (nested list — structural detection) -->
+  <ul class="file-tree">
+    <li>src/
+      <ul>
+        <li>components/
+          <ul>
+            <li>Button.tsx</li><li>Input.tsx</li><li>Modal.tsx</li>
+          </ul>
+        </li>
+        <li>pages/
+          <ul>
+            <li>Home.tsx</li><li>About.tsx</li>
+          </ul>
+        </li>
+        <li>App.tsx</li>
+      </ul>
+    </li>
+    <li>public/
+      <ul>
+        <li>index.html</li><li>favicon.ico</li>
+      </ul>
+    </li>
+  </ul>
+  <!-- Feed (structural: section > div+img+p) -->
+  <section class="news-feed">
+    <div><img src="t1.jpg" alt="Article thumbnail"/><h3>Wireless charging reaches 100W</h3><p>New standard enables faster charging across all devices.</p></div>
+    <div><img src="t2.jpg" alt="Article thumbnail"/><h3>AI chips: what's next in 2026</h3><p>A look at upcoming semiconductor architectures.</p></div>
+    <div><img src="t3.jpg" alt="Article thumbnail"/><h3>OLED vs mini-LED: comparison guide</h3><p>Which display technology is right for you?</p></div>
+  </section>
+  <!-- Product option list (structural: div>ul) -->
+  <div class="product-options">
+    <ul>
+      <li>Small</li><li>Medium</li><li>Large</li><li>X-Large</li>
+    </ul>
+  </div>
+  <!-- Splitter -->
+  <div class="splitter gutter gutter-horizontal" draggable="true"></div>
+  <!-- Tooltip via attribute -->
+  <button title="Opens your account settings">Settings</button>
+  <span data-tooltip="Copy link to clipboard">Share link</span>
+  <span data-bs-toggle="tooltip" data-bs-title="Download as PDF">⬇ Export</span>
+  <!-- Images -->
+  <img src="product-main.jpg" alt="Headphones Pro main product image"/>
+  <picture>
+    <source media="(min-width:800px)" srcset="hero-large.webp" type="image/webp"/>
+    <img src="hero.jpg" alt="Hero banner"/>
+  </picture>
+  <!-- SVG icon -->
+  <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
+  <!-- Canvas -->
+  <canvas width="400" height="200" title="Sales chart"></canvas>
+  <!-- Video -->
+  <video controls poster="thumb.jpg">
+    <source src="demo.mp4" type="video/mp4"/>
+    <track kind="captions" src="captions.vtt" srclang="en"/>
+  </video>
+  <!-- Audio -->
+  <audio controls><source src="podcast.mp3"/></audio>
+  <!-- Text content -->
+  <article>
+    <h2>Understanding headphone specs</h2>
+    <p>When choosing headphones, consider <strong>frequency response</strong>, <em>impedance</em>, and <mark>driver size</mark>.</p>
+    <p>The <abbr title="Total Harmonic Distortion">THD</abbr> spec measures audio accuracy. Lower is better: aim for <code>&lt;0.1%</code> THD.</p>
+    <blockquote><p>Great sound starts with great engineering.</p></blockquote>
+    <pre>Sample rate: 44.1kHz
+Bit depth: 24-bit
+Format: FLAC</pre>
+    <p>Published: <time datetime="2026-01-15">January 15, 2026</time></p>
+  </article>
+  <!-- Inline text elements -->
+  <p>Price: <del>$349</del> <ins>$299</ins> — save <mark>$50</mark> today!</p>
+  <p>Formula: H<sub>2</sub>O, E=mc<sup>2</sup></p>
+  <p><small>* Prices subject to change without notice.</small></p>
+  <address>Acme Corp · <a href="mailto:support@acme.com">support@acme.com</a> · 123 Main St</address>
+  <!-- Links -->
+  <a href="https://example.com">External link</a>
+  <a href="#top">Back to top</a>
+  <a>Placeholder anchor</a>
+</main>
+<aside><h2>Related products</h2><ul><li><a href="/p/1">Speaker X</a></li><li><a href="/p/2">Earbuds Y</a></li></ul></aside>
+<footer><p>&copy; 2026 Example Corp. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></footer>
+</body></html>`
+};
+
+function loadSample(type) {
+  document.getElementById('hi').value = SAMPLES[type];
+  updateCount();
+}
+document.getElementById('hi').addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') run();
+});
+</script>
+</body>
+</html>
