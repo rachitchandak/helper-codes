@@ -9,6 +9,7 @@ function runBreadcrumbDetector(overrides = {}) {
     maxItems: 8,
     minScore: 30,
     maxResults: 24,
+    includeFrames: true,
     overlayZIndex: 2147483646,
     palette: ['#ff5d5d', '#2ec4b6', '#ff9f1c', '#6c63ff', '#06d6a0', '#ef476f', '#118ab2', '#ffd166', '#8338ec', '#3a86ff'],
     ignoredTags: new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'SVG', 'PATH']),
@@ -18,11 +19,14 @@ function runBreadcrumbDetector(overrides = {}) {
   const config = {
     ...BASE_CONFIG,
     maxResults: overrides.maxResults ?? BASE_CONFIG.maxResults,
+    includeFrames: overrides.includeFrames ?? BASE_CONFIG.includeFrames,
     highlightVisible: overrides.highlightVisible ?? BASE_CONFIG.highlightVisible,
   };
 
   const state = {
+    childApis: [],
     overlays: [],
+    resultHandles: new Map(),
     styleEl: null,
     results: [],
   };
@@ -57,7 +61,27 @@ function runBreadcrumbDetector(overrides = {}) {
 
   const hasExcludedName = (el) => /pagination|pager|page-nav|tab|tablist|toolbar|menu|menubar|carousel|accordion|tree|social|share|footer|chip|tag|toc|table-of-contents|reference-toc|secondary-nav|quick-links|progressive-nav|nav3-column|link-list|list-style-tick/i.test(classTextFor(el));
 
+  const hasHelperName = (el) => /tooltip|popover|ellipsis|collapsed|indicator|badge|helper|hint|description|caption|sr-only|visually-hidden|screen-reader|assistive/i.test(classTextFor(el));
+
+  const hasDecorativeName = (el) => /icon|glyph|emoji|dot|circle|node|bullet|avatar|progress|meter|track|line/i.test(classTextFor(el));
+
+  const hasBreadcrumbItemName = (el) => /breadcrumb-item|breadcrumb-step|breadcrumbs?-item|crumb-item|step-(complete|active|current)|step\b/i.test(classTextFor(el));
+
   const hasSeparatorName = (el) => /separator|divider|slash|chevron|arrow|crumb-divider/i.test(classTextFor(el));
+
+  const isHiddenForExtraction = (el) => {
+    if (!(el instanceof Element)) return true;
+
+    for (let current = el; current; current = current.parentElement) {
+      const style = window.getComputedStyle(current);
+      if (style.display === 'none') return true;
+      if (style.visibility === 'hidden' || style.contentVisibility === 'hidden') return true;
+      if (current.hasAttribute('hidden') || current.getAttribute('aria-hidden') === 'true') return true;
+    }
+
+    const style = window.getComputedStyle(el);
+    return (style.overflow === 'hidden' || style.overflowX === 'hidden' || style.overflowY === 'hidden') && (style.height === '0px' || style.maxHeight === '0px');
+  };
 
   const getVisibilityInfo = (el) => {
     for (let current = el; current; current = current.parentElement) {
@@ -128,6 +152,11 @@ function runBreadcrumbDetector(overrides = {}) {
     return parts.join(' > ');
   };
 
+  const getFrameSelectorHint = (frameEl, index) => {
+    const selectorHint = buildSelectorHint(frameEl);
+    return selectorHint || `${frameEl.tagName.toLowerCase()}[data-breadcrumb-frame-index="${index + 1}"]`;
+  };
+
   const getAccessibleLabel = (el) => {
     if (!(el instanceof Element)) return '';
     const ariaLabel = el.getAttribute('aria-label');
@@ -147,7 +176,65 @@ function runBreadcrumbDetector(overrides = {}) {
 
   const getDirectElementChildren = (el) => {
     if (!(el instanceof Element)) return [];
-    return [...el.children].filter((child) => !config.ignoredTags.has(child.tagName));
+    return [...el.children].filter((child) => !config.ignoredTags.has(child.tagName) && !isHiddenForExtraction(child) && !hasHelperName(child));
+  };
+
+  const unwrapSingleChildContainer = (el) => {
+    if (!(el instanceof Element)) return el;
+
+    let current = el;
+    while (current instanceof Element) {
+      const children = getDirectElementChildren(current);
+      if (children.length !== 1) break;
+
+      const [onlyChild] = children;
+      if (!(onlyChild instanceof Element)) break;
+      if (normalizeText(current) !== normalizeText(onlyChild)) break;
+
+      current = onlyChild;
+    }
+
+    return current;
+  };
+
+  const extractItemText = (el) => {
+    if (!(el instanceof Element)) return '';
+
+    if (el.tagName === 'A') {
+      return normalizeText(el);
+    }
+
+    const directChildren = getDirectElementChildren(el);
+    const labelledChild = directChildren.find((child) => {
+      if (isSeparatorElement(child) || hasDecorativeName(child)) return false;
+      return /label|title|text|name|value/i.test(classTextFor(child)) && !!normalizeText(child);
+    });
+
+    if (labelledChild) {
+      return normalizeText(labelledChild);
+    }
+
+    const ownText = [...el.childNodes]
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => String(node.textContent || '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    if (ownText) {
+      return ownText;
+    }
+
+    const textChildren = directChildren
+      .filter((child) => !isSeparatorElement(child) && !hasDecorativeName(child))
+      .map((child) => normalizeText(child))
+      .filter(Boolean);
+
+    if (textChildren.length > 0) {
+      return unique(textChildren).join(' ').trim();
+    }
+
+    return normalizeText(el);
   };
 
   const isCurrentItem = (item, index, items) => {
@@ -180,11 +267,11 @@ function runBreadcrumbDetector(overrides = {}) {
 
     const totalLinks = wrapper.querySelectorAll('a[href]').length;
     if (directLinks.length > 1 || totalLinks > 1) return null;
-    if (wrapper.querySelector('img, picture, video, figure, table, form, input, textarea, select')) return null;
+    if (wrapper.querySelector('picture, video, figure, table, form, input, textarea, select')) return null;
 
     if (directLinks.length === 1) {
       const link = directLinks[0];
-      const text = normalizeText(link);
+      const text = extractItemText(link) || extractItemText(wrapper);
       if (!text) return null;
       return {
         wrapper,
@@ -198,21 +285,22 @@ function runBreadcrumbDetector(overrides = {}) {
     const candidateChild = directChildren.find((child) => {
       if (isSeparatorElement(child)) return false;
       if (child.querySelector('a[href], button, input, textarea, select')) return false;
-      const text = normalizeText(child);
+      const text = extractItemText(child);
       return !!text && text.length <= 120;
     });
 
     if (candidateChild) {
+      const text = extractItemText(candidateChild);
       return {
         wrapper,
         element: candidateChild,
         link: null,
         isLink: false,
-        text: normalizeText(candidateChild),
+        text,
       };
     }
 
-    const wrapperText = normalizeText(wrapper);
+    const wrapperText = extractItemText(wrapper);
     if (wrapperText && wrapperText.length <= 120 && directChildren.every((child) => !isSeparatorElement(child))) {
       return {
         wrapper,
@@ -256,34 +344,49 @@ function runBreadcrumbDetector(overrides = {}) {
     if (isSeparatorElement(el)) return false;
     if (['A', 'SPAN', 'STRONG', 'EM', 'B'].includes(el.tagName)) return true;
     if (['DIV', 'P'].includes(el.tagName)) {
-      const text = normalizeText(el);
-      return text.length > 0 && text.length <= 80 && !el.querySelector('img, picture, video, table, form, input, textarea, select');
+      const text = extractItemText(el);
+      return !!text && text.length <= 80 && !el.querySelector('picture, video, table, form, input, textarea, select');
     }
     return false;
   };
 
   const extractInlineTrail = (container) => {
     if (!(container instanceof Element)) return null;
-    const directChildren = getDirectElementChildren(container);
+    const directChildren = getDirectElementChildren(container).map((child) => unwrapSingleChildContainer(child));
     if (directChildren.length < config.minItems) return null;
 
-    const wrappers = directChildren.filter((child) => isInlineItemElement(child));
+    const wrappers = [];
+
+    directChildren.forEach((child) => {
+      const nestedChildren = getDirectElementChildren(child).map((nestedChild) => unwrapSingleChildContainer(nestedChild));
+      const nestedWrappers = nestedChildren.filter((nestedChild) => isInlineItemElement(nestedChild));
+
+      if (nestedWrappers.length >= config.minItems && nestedWrappers.length <= config.maxItems) {
+        wrappers.push(...nestedWrappers);
+        return;
+      }
+
+      if (isInlineItemElement(child)) {
+        wrappers.push(child);
+      }
+    });
+
     if (wrappers.length < config.minItems || wrappers.length > config.maxItems) return null;
 
     const items = wrappers.map((wrapper) => {
       if (wrapper.tagName === 'A' && wrapper.hasAttribute('href')) {
-        const text = normalizeText(wrapper);
+        const text = extractItemText(wrapper);
         if (!text) return null;
         return { wrapper, element: wrapper, link: wrapper, isLink: true, text };
       }
       const directLinks = wrapper.querySelectorAll(':scope > a[href]');
       if (directLinks.length === 1) {
         const link = directLinks[0];
-        const text = normalizeText(link);
+        const text = extractItemText(link) || extractItemText(wrapper);
         if (!text) return null;
         return { wrapper, element: link, link, isLink: true, text };
       }
-      const text = normalizeText(wrapper);
+      const text = extractItemText(wrapper);
       if (!text) return null;
       return { wrapper, element: wrapper, link: null, isLink: false, text };
     });
@@ -323,6 +426,7 @@ function runBreadcrumbDetector(overrides = {}) {
     if (!(container instanceof Element)) return null;
     if (config.ignoredTags.has(container.tagName)) return null;
     if (container === document.body || container === document.documentElement) return null;
+    if (hasBreadcrumbItemName(container) && container.parentElement && hasBreadcrumbName(container.parentElement)) return null;
     const navLabel = getAccessibleLabel(container);
     if (hasExcludedName(container) && !hasBreadcrumbName(container) && !/breadcrumb/i.test(navLabel)) return null;
     if (container.matches('[role="menu"], [role="tablist"], [role="tree"], footer, aside')) return null;
@@ -349,7 +453,9 @@ function runBreadcrumbDetector(overrides = {}) {
     const currentIndex = currentIndexes.length === 1 ? currentIndexes[0] : -1;
     const linkCount = trail.items.filter((item) => item.isLink).length;
     const nonLastLinks = trail.items.slice(0, -1).filter((item) => item.isLink).length;
-    const mediaCount = trail.items.filter((item) => item.wrapper.querySelector('img, picture, video, svg')).length;
+    const namedItemCount = trail.wrappers.filter((wrapper) => hasBreadcrumbItemName(wrapper)).length;
+    const explicitStepperSignal = namedItemCount >= Math.max(2, itemCount - 1);
+    const mediaCount = trail.items.filter((item) => item.wrapper.querySelector('picture, video')).length;
     const inputCount = container.querySelectorAll('button, input, textarea, select').length;
     const nestedListCount = trail.wrappers.filter((wrapper) => wrapper.querySelector('ul, ol')).length;
     const orientation = inferOrientation(trail.items);
@@ -362,16 +468,16 @@ function runBreadcrumbDetector(overrides = {}) {
     const rootLikeFirstItem = /^home$/i.test(labels[0]) || /^(web|javascript|reference|patterns|learn|docs?|documentation|azure)$/i.test(labels[0]);
     const breadcrumbNameSignal = hasBreadcrumbName(container);
     const breadcrumbLabelSignal = /breadcrumb/i.test(navLabel);
-    const explicitBreadcrumbSignal = breadcrumbLabelSignal || (breadcrumbNameSignal && (currentIndex === itemCount - 1 || rootLikeFirstItem));
+    const explicitBreadcrumbSignal = breadcrumbLabelSignal || (breadcrumbNameSignal && (currentIndex === itemCount - 1 || rootLikeFirstItem || explicitStepperSignal));
     const hasStrongAncestorLinkPattern = nonLastLinks >= Math.max(1, itemCount - 2);
 
     if (numericRatio >= 0.5 || (prevNextCount >= 2 && itemCount >= 3)) {
       return null;
     }
-    if (currentIndex >= 0 && currentIndex !== itemCount - 1) {
+    if (currentIndex >= 0 && currentIndex !== itemCount - 1 && !(explicitStepperSignal && explicitBreadcrumbSignal && linkCount === 0)) {
       return null;
     }
-    if (linkCount === 0) {
+    if (linkCount === 0 && !(explicitBreadcrumbSignal && explicitStepperSignal)) {
       return null;
     }
     if (/quick-links|progressive-nav|nav-hack/i.test(classTextFor(container)) && !breadcrumbLabelSignal) {
@@ -421,6 +527,10 @@ function runBreadcrumbDetector(overrides = {}) {
       score += 12;
       reasons.push('ancestor-links');
     }
+    if (linkCount === 0 && explicitStepperSignal) {
+      score += 12;
+      reasons.push('explicit-stepper-trail');
+    }
     if (hasStrongAncestorLinkPattern) {
       score += 10;
       reasons.push('strong-ancestor-link-pattern');
@@ -432,6 +542,10 @@ function runBreadcrumbDetector(overrides = {}) {
     if (currentIndex === itemCount - 1) {
       score += 18;
       reasons.push('last-current-item');
+    }
+    if (currentIndex >= 0 && currentIndex !== itemCount - 1 && explicitStepperSignal) {
+      score += 6;
+      reasons.push('stepper-current-item');
     }
     if (orientation === 'horizontal') {
       score += 12;
@@ -465,6 +579,10 @@ function runBreadcrumbDetector(overrides = {}) {
     if (currentIndex < 0 && !explicitBreadcrumbSignal) {
       score -= 18;
       reasons.push('missing-current-item');
+    }
+    if (currentIndex < 0 && explicitStepperSignal && linkCount === 0) {
+      score -= 4;
+      reasons.push('stepper-missing-current-item');
     }
     if (linkCount === itemCount && !explicitBreadcrumbSignal) {
       score -= 10;
@@ -504,8 +622,25 @@ function runBreadcrumbDetector(overrides = {}) {
   };
 
   const gatherCandidates = () => {
+    const structuralCandidates = [...document.querySelectorAll('div, p')].filter((el) => {
+      const directChildren = getDirectElementChildren(el).map((child) => unwrapSingleChildContainer(child));
+      if (directChildren.length < config.minItems || directChildren.length > config.maxItems) return false;
+
+      const directLinkishCount = directChildren.filter((child) => {
+        if (!(child instanceof Element)) return false;
+        if (child.matches('a[href]')) return true;
+        if (child.querySelector(':scope > a[href]')) return true;
+
+        const nestedChildren = getDirectElementChildren(child).map((nestedChild) => unwrapSingleChildContainer(nestedChild));
+        return nestedChildren.some((nestedChild) => nestedChild.matches('a[href]') || !!nestedChild.querySelector(':scope > a[href]'));
+      }).length;
+
+      return directLinkishCount >= Math.max(1, directChildren.length - 1);
+    });
+
     const candidates = unique([
       ...document.querySelectorAll('nav, ol, ul, [class*="crumb"], [class*="breadcrumb"], [id*="crumb"], [id*="breadcrumb"], [aria-label], [aria-labelledby]'),
+      ...structuralCandidates,
     ]);
 
     return candidates
@@ -577,6 +712,13 @@ function runBreadcrumbDetector(overrides = {}) {
   };
 
   const cleanup = () => {
+    state.childApis.forEach((api) => {
+      if (api && typeof api.cleanup === 'function') {
+        api.cleanup();
+      }
+    });
+    state.childApis = [];
+
     document.querySelectorAll('.__breadcrumb-detector-container').forEach((el) => {
       el.classList.remove('__breadcrumb-detector-container');
       el.style.removeProperty('--breadcrumb-detector-color');
@@ -591,6 +733,7 @@ function runBreadcrumbDetector(overrides = {}) {
 
     state.overlays.forEach((el) => el.remove());
     state.overlays = [];
+    state.resultHandles.clear();
 
     if (state.styleEl) {
       state.styleEl.remove();
@@ -600,6 +743,12 @@ function runBreadcrumbDetector(overrides = {}) {
 
   const revealCandidate = (result) => {
     if (!result) return;
+
+    const handle = state.resultHandles.get(result.id);
+    if (handle && handle.type === 'frame') {
+      return handle.reveal();
+    }
+
     const container = result.container;
     if (!(container instanceof Element)) return;
 
@@ -647,12 +796,70 @@ function runBreadcrumbDetector(overrides = {}) {
     state.overlays.push(badge);
   };
 
+  const collectFrameResults = (startingId) => {
+    if (!config.includeFrames) return [];
+
+    const frameResults = [];
+    const frameElements = [...document.querySelectorAll('iframe, frame')];
+    let nextId = startingId;
+
+    frameElements.forEach((frameEl, frameIndex) => {
+      try {
+        const frameWindow = frameEl.contentWindow;
+        const frameDocument = frameEl.contentDocument;
+
+        if (!frameWindow || !frameDocument || !frameDocument.documentElement) {
+          return;
+        }
+
+        frameEl.dataset.breadcrumbFrameIndex = String(frameIndex + 1);
+        frameWindow.eval(`window.runBreadcrumbDetector = ${runBreadcrumbDetector.toString()};`);
+
+        const childApi = frameWindow.runBreadcrumbDetector({
+          ...overrides,
+          includeFrames: false,
+          highlightVisible: config.highlightVisible,
+          maxResults: config.maxResults,
+        });
+
+        if (!childApi || !Array.isArray(childApi.results)) {
+          return;
+        }
+
+        state.childApis.push(childApi);
+
+        childApi.results.forEach((result) => {
+          const mergedResult = {
+            ...result,
+            id: nextId,
+            frameIndex: frameIndex + 1,
+            frameSelectorHint: getFrameSelectorHint(frameEl, frameIndex),
+            frameTitle: frameDocument.title,
+            frameUrl: frameWindow.location.href,
+          };
+
+          state.resultHandles.set(nextId, {
+            type: 'frame',
+            reveal: () => childApi.reveal(result.id),
+          });
+
+          frameResults.push(mergedResult);
+          nextId += 1;
+        });
+      } catch (error) {
+        console.warn('Breadcrumb detector could not access frame', frameEl, error);
+      }
+    });
+
+    return frameResults;
+  };
+
   addStyles();
 
   const candidates = dedupeCandidates(gatherCandidates()).slice(0, config.maxResults);
   candidates.forEach((candidate, index) => paintCandidate(candidate, index));
 
-  const results = candidates.map((candidate, index) => ({
+  const topLevelResults = candidates.map((candidate, index) => ({
     id: index + 1,
     itemCount: candidate.itemCount,
     linkCount: candidate.linkCount,
@@ -676,6 +883,15 @@ function runBreadcrumbDetector(overrides = {}) {
       element: item.element,
     })),
   }));
+
+  topLevelResults.forEach((result) => {
+    state.resultHandles.set(result.id, {
+      type: 'document',
+      reveal: () => revealCandidate(result),
+    });
+  });
+
+  const results = [...topLevelResults, ...collectFrameResults(topLevelResults.length + 1)].slice(0, config.maxResults);
 
   state.results = results;
 
