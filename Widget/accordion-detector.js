@@ -21,6 +21,7 @@ function runAccordionDetector(overrides = {}) {
     maxResults: overrides.maxResults ?? BASE_CONFIG.maxResults,
     includeHidden: overrides.includeHidden ?? BASE_CONFIG.includeHidden,
     highlightVisible: overrides.highlightVisible ?? BASE_CONFIG.highlightVisible,
+    scanFrames: overrides.scanFrames ?? true,
   };
 
   const state = {
@@ -62,6 +63,31 @@ function runAccordionDetector(overrides = {}) {
   const hasAccordionName = (el) => /accordion|faq|collapse|collapsible|disclosure|expand|expander|toggle|drawer-section/i.test(classTextFor(el));
 
   const hasExcludedName = (el) => /nav|menu|menubar|tree|treeview|tab|tablist|carousel|slider|swiper|splide|glide|toolbar|breadcrumb/i.test(classTextFor(el));
+
+  const hasDropdownLikeName = (el) => /dropdown|menu|menubar|navbar|navigation|nav|tooltip|popover|listbox|select/i.test(classTextFor(el));
+
+  const isAccordionTriggerCandidate = (el) => {
+    if (!(el instanceof Element)) return false;
+    if (el.tagName === 'BUTTON' || el.tagName === 'SUMMARY') return true;
+    if (el.tagName !== 'A') return false;
+
+    const role = el.getAttribute('role');
+    const href = el.getAttribute('href') || '';
+    const controls = el.getAttribute('aria-controls');
+    const expanded = el.getAttribute('aria-expanded');
+    const dataToggle = `${el.getAttribute('data-bs-toggle') || ''} ${el.getAttribute('data-toggle') || ''}`;
+    const classText = classTextFor(el);
+    const ownerText = classTextFor(el.parentElement || el);
+
+    return !!(
+      controls ||
+      expanded === 'true' ||
+      expanded === 'false' ||
+      role === 'button' ||
+      /collapse|accordion|dropdown|toggle|disclosure/.test(dataToggle) ||
+      ((href.startsWith('#') || href === '') && /accordion|collapse|collapsible|disclosure|toggle|drawer-section/i.test(`${classText} ${ownerText}`))
+    );
+  };
 
   const isHeading = (el) => (el instanceof Element) && (/^(H1|H2|H3|H4|H5|H6)$/.test(el.tagName) || el.getAttribute('role') === 'heading');
 
@@ -152,6 +178,41 @@ function runAccordionDetector(overrides = {}) {
     return getPanelContentCount(el) === 0 && interactiveDescendantCount <= 2 && text.length > 0 && text.length <= 80;
   };
 
+  const isPassiveAccordionHeader = (node) => {
+    if (!(node instanceof Element)) return false;
+    if (config.ignoredTags.has(node.tagName)) return false;
+
+    const next = node.nextElementSibling;
+    const parent = node.parentElement;
+    if (!(next instanceof Element) || !(parent instanceof Element)) {
+      return false;
+    }
+
+    if (hasDropdownLikeName(node) || hasDropdownLikeName(parent) || hasDropdownLikeName(next)) {
+      return false;
+    }
+
+    const text = normalizeText(node);
+    if (!text || text.length > 140) {
+      return false;
+    }
+
+    const interactiveDescendantCount = node.querySelectorAll('a[href], button, summary, input, select, textarea').length;
+    if (interactiveDescendantCount > 1) {
+      return false;
+    }
+
+    const meaningfulChildCount = [...parent.children].filter((child) => !config.ignoredTags.has(child.tagName)).length;
+    const classBundle = `${classTextFor(node)} ${classTextFor(parent)} ${classTextFor(next)}`;
+    const headerNamed = /question|header|title|summary|trigger|toggle|label|heading/i.test(classBundle);
+    const panelNamed = /answer|content|body|panel|details|section|region|description/i.test(classBundle);
+    const accordionNamed = /accordion|faq|collapsible|collapse|disclosure|item/i.test(classBundle);
+    const nextText = normalizeText(next);
+    const nextLooksLikePanel = panelNamed || next.children.length >= 2 || nextText.length >= 24 || !!next.querySelector(panelContentSelector);
+
+    return nextLooksLikePanel && meaningfulChildCount >= 2 && meaningfulChildCount <= 6 && (headerNamed || (accordionNamed && panelNamed));
+  };
+
   const extractPrimaryTrigger = (node) => {
     if (!(node instanceof Element)) return null;
     if (config.ignoredTags.has(node.tagName)) return null;
@@ -164,16 +225,24 @@ function runAccordionDetector(overrides = {}) {
       return node;
     }
 
+    if (node.tagName === 'A') {
+      return isAccordionTriggerCandidate(node) ? node : null;
+    }
+
     if (isHeading(node)) {
       const directInteractive = getDirectInteractiveChildren(node);
-      if (directInteractive.length === 1) {
+      if (directInteractive.length === 1 && isAccordionTriggerCandidate(directInteractive[0])) {
         return directInteractive[0];
       }
     }
 
     const directInteractive = getDirectInteractiveChildren(node);
-    if (directInteractive.length === 1) {
+    if (directInteractive.length === 1 && isAccordionTriggerCandidate(directInteractive[0])) {
       return directInteractive[0];
+    }
+
+    if (isPassiveAccordionHeader(node)) {
+      return node;
     }
 
     if (hasAccordionName(node)) {
@@ -243,10 +312,6 @@ function runAccordionDetector(overrides = {}) {
       return ownerNode.nextElementSibling;
     }
 
-    if (ownerNode.nextElementSibling && isValidPanelCandidate(ownerNode.nextElementSibling, trigger)) {
-      return ownerNode.nextElementSibling;
-    }
-
     const siblings = [...ownerNode.children];
     const triggerIndex = siblings.indexOf(trigger);
     if (triggerIndex >= 0) {
@@ -255,6 +320,10 @@ function runAccordionDetector(overrides = {}) {
           return siblings[index];
         }
       }
+    }
+
+    if (ownerNode.nextElementSibling && isValidPanelCandidate(ownerNode.nextElementSibling, trigger)) {
+      return ownerNode.nextElementSibling;
     }
 
     if (ownerNode.parentElement && ownerNode.parentElement !== container) {
@@ -342,6 +411,218 @@ function runAccordionDetector(overrides = {}) {
     return uniqueSections;
   };
 
+  const splitContiguousSectionRuns = (container, sections) => {
+    if (!(container instanceof Element) || sections.length <= 1) {
+      return [sections];
+    }
+
+    const childIndexes = new Map([...container.children].map((child, index) => [child, index]));
+    const getSectionBoundaryIndexes = (section) => {
+      const wrapperIndex = childIndexes.get(section.wrapper);
+
+      if (typeof wrapperIndex !== 'number') {
+        return { startIndex: null, endIndex: null };
+      }
+
+      if (section.wrapper === section.panel || section.wrapper.contains(section.panel)) {
+        return { startIndex: wrapperIndex, endIndex: wrapperIndex };
+      }
+
+      const panelIndex = childIndexes.get(section.panel);
+      if (typeof panelIndex !== 'number') {
+        return { startIndex: wrapperIndex, endIndex: wrapperIndex };
+      }
+
+      return {
+        startIndex: Math.min(wrapperIndex, panelIndex),
+        endIndex: Math.max(wrapperIndex, panelIndex),
+      };
+    };
+
+    const runs = [];
+    let currentRun = [];
+    let previousEndIndex = -1;
+
+    sections.forEach((section) => {
+      const { startIndex, endIndex } = getSectionBoundaryIndexes(section);
+
+      if (typeof startIndex !== 'number' || typeof endIndex !== 'number') {
+        if (currentRun.length) {
+          runs.push(currentRun);
+          currentRun = [];
+        }
+        runs.push([section]);
+        previousEndIndex = -1;
+        return;
+      }
+
+      if (!currentRun.length || startIndex <= previousEndIndex + 1) {
+        currentRun.push(section);
+      } else {
+        runs.push(currentRun);
+        currentRun = [section];
+      }
+
+      previousEndIndex = endIndex;
+    });
+
+    if (currentRun.length) {
+      runs.push(currentRun);
+    }
+
+    return runs;
+  };
+
+  const isDirectSiblingSectionPair = (section) => {
+    if (!section?.wrapper || !section?.panel) {
+      return false;
+    }
+
+    if (section.wrapper.nextElementSibling === section.panel) {
+      return true;
+    }
+
+    const triggerParent = section.trigger?.parentElement;
+    return !!(triggerParent && triggerParent.nextElementSibling === section.panel);
+  };
+
+  const isStrongSingleSectionPattern = (container, section) => {
+    if (!(container instanceof Element) || !section) {
+      return false;
+    }
+
+    const trigger = section.trigger;
+    const panel = section.panel;
+    if (!(trigger instanceof Element) || !(panel instanceof Element)) {
+      return false;
+    }
+
+    if (!isDirectSiblingSectionPair(section)) {
+      return false;
+    }
+
+    const pairClassText = `${classTextFor(container)} ${classTextFor(section.wrapper)} ${classTextFor(trigger)} ${classTextFor(panel)}`;
+    if (/dropdown|menu|menubar|navbar|tooltip|popover|listbox|select|combobox/i.test(pairClassText)) {
+      return false;
+    }
+
+    if (!['BUTTON', 'SUMMARY', 'A'].includes(trigger.tagName)) {
+      return false;
+    }
+
+    const panelVisibility = getVisibilityInfo(panel);
+    const panelText = normalizeText(panel);
+    const panelContentCount = getPanelContentCount(panel);
+    const triggerStyle = window.getComputedStyle(trigger);
+    const parent = section.wrapper.parentElement;
+    const localChildCount = parent instanceof Element
+      ? [...parent.children].filter((child) => !config.ignoredTags.has(child.tagName)).length
+      : 0;
+    const contentLike = panelContentCount > 0 || panelText.length >= 12 || !!panel.querySelector('a[href], ul, ol, dl, p, img, figure, article, section, div');
+    const hiddenLike = !panelVisibility.visible || panel.hasAttribute('hidden') || /\bhide\b|\bshow\b|collapse|collapsible|content|panel|drawer|details|answer|animate/i.test(pairClassText);
+    const blockLikeTrigger = triggerStyle.display.includes('block') || /\bblock\b|\bleft-align\b|\bbutton\b|\bbtn\b|\bpadding-\d+\b/i.test(classTextFor(trigger));
+    const isolatedPair = localChildCount > 0 && localChildCount <= 4;
+    const anchorDisclosure = trigger.tagName === 'A' && /button|btn|toggle|accordion|collapse/i.test(pairClassText);
+
+    if (hasDropdownLikeName(panel) || hasDropdownLikeName(trigger) || hasDropdownLikeName(section.wrapper)) {
+      return false;
+    }
+
+    return contentLike && hiddenLike && (blockLikeTrigger || anchorDisclosure) && (isolatedPair || hasAccordionName(container) || hasAccordionName(trigger) || hasAccordionName(panel) || trigger.tagName !== 'A');
+  };
+
+  const scoreSectionRun = (run) => {
+    if (!run.length) {
+      return -Infinity;
+    }
+
+    const hiddenPanels = run.filter((section) => !getVisibilityInfo(section.panel).visible).length;
+    const descriptiveLabels = run.filter((section) => /[A-Za-z]/.test(normalizeText(section.trigger))).length;
+    const numericLabels = run.filter((section) => /^\d+%?$/.test(normalizeText(section.trigger))).length;
+    const contentPanels = run.filter((section) => {
+      const text = normalizeText(section.panel);
+      return text.length >= 20 || section.panel.querySelector(panelContentSelector);
+    }).length;
+    const nestedTriggerPanels = run.filter((section) => {
+      return run.some((other) => other !== section && section.panel.contains(other.trigger));
+    }).length;
+
+    return (
+      run.length * 10 +
+      hiddenPanels * 6 +
+      descriptiveLabels * 4 +
+      contentPanels * 3 -
+      numericLabels * 8 -
+      nestedTriggerPanels * 12
+    );
+  };
+
+  const chooseBestSectionRun = (container, sections) => {
+    const runs = splitContiguousSectionRuns(container, sections)
+      .filter((run) => run.length >= config.minSections)
+      .sort((left, right) => scoreSectionRun(right) - scoreSectionRun(left) || right.length - left.length);
+
+    if (!runs.length) {
+      return sections;
+    }
+
+    return runs[0];
+  };
+
+  const getCandidateRuns = (container, sections) => {
+    if (!sections.length) {
+      return [];
+    }
+
+    const splitRuns = splitContiguousSectionRuns(container, sections);
+    const multiRuns = splitRuns.filter((run) => run.length >= config.minSections && run.length <= config.maxSections);
+    const singleRuns = splitRuns.filter((run) => run.length === 1 && isStrongSingleSectionPattern(container, run[0]));
+
+    const runs = (multiRuns.length
+      ? [...multiRuns, ...singleRuns]
+      : [
+          ...(sections.length >= config.minSections && sections.length <= config.maxSections ? [chooseBestSectionRun(container, sections)] : []),
+          ...singleRuns,
+        ])
+      .sort((left, right) => scoreSectionRun(right) - scoreSectionRun(left) || right.length - left.length);
+
+    if (runs.length) {
+      return runs;
+    }
+
+    if (sections.length >= config.minSections && sections.length <= config.maxSections) {
+      return [chooseBestSectionRun(container, sections)];
+    }
+
+    return [];
+  };
+
+  const normalizeClassSignature = (el) => {
+    if (!(el instanceof Element)) {
+      return '';
+    }
+
+    const ignoredTokens = new Set(['active', 'collapsed', 'collapse', 'show', 'open', 'closed', 'hidden']);
+    const tokens = [...el.classList]
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .filter((token) => !ignoredTokens.has(token.toLowerCase()))
+      .sort();
+
+    return `${el.tagName}:${tokens.join('.')}`;
+  };
+
+  const dominantRatio = (items) => {
+    if (!items.length) {
+      return 0;
+    }
+
+    const counts = new Map();
+    items.forEach((item) => counts.set(item, (counts.get(item) || 0) + 1));
+    const maxCount = Math.max(...counts.values(), 0);
+    return maxCount / items.length;
+  };
+
   const getDepth = (el) => {
     let depth = 0;
     let current = el;
@@ -371,6 +652,68 @@ function runAccordionDetector(overrides = {}) {
     width: Math.round(rect.width),
     height: Math.round(rect.height),
   });
+
+  const mergeRects = (rects) => {
+    const validRects = rects.filter((rect) => rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 1 && rect.height > 1);
+    if (!validRects.length) {
+      return null;
+    }
+
+    const left = Math.min(...validRects.map((rect) => rect.left));
+    const top = Math.min(...validRects.map((rect) => rect.top));
+    const right = Math.max(...validRects.map((rect) => rect.right));
+    const bottom = Math.max(...validRects.map((rect) => rect.bottom));
+
+    return {
+      x: left,
+      y: top,
+      left,
+      top,
+      right,
+      bottom,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top),
+    };
+  };
+
+  const getDirectChildWithin = (ancestor, node) => {
+    if (!(ancestor instanceof Element) || !(node instanceof Element) || !ancestor.contains(node)) {
+      return null;
+    }
+
+    let current = node;
+    while (current && current.parentElement && current.parentElement !== ancestor) {
+      current = current.parentElement;
+    }
+
+    return current?.parentElement === ancestor ? current : null;
+  };
+
+  const getRunHighlightGeometry = (container, sections) => {
+    const childIndexes = new Map([...container.children].map((child, index) => [child, index]));
+    const touchedChildren = unique(sections.flatMap((section) => {
+      return [section.wrapper, section.panel]
+        .map((node) => getDirectChildWithin(container, node))
+        .filter((node) => node instanceof Element && !config.ignoredTags.has(node.tagName));
+    }))
+      .sort((left, right) => (childIndexes.get(left) || 0) - (childIndexes.get(right) || 0));
+
+    const rectSources = touchedChildren.length ? touchedChildren : [container];
+    const highlightRect = mergeRects(rectSources.map((node) => node.getBoundingClientRect())) || container.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const totalChildCount = [...container.children].filter((child) => !config.ignoredTags.has(child.tagName)).length;
+    const touchedRatio = touchedChildren.length / Math.max(1, totalChildCount);
+    const containerArea = Math.max(1, containerRect.width * containerRect.height);
+    const highlightArea = Math.max(1, highlightRect.width * highlightRect.height);
+    const areaRatio = highlightArea / containerArea;
+    const useContainer = hasAccordionName(container) || touchedRatio >= 0.7 || areaRatio >= 0.72 || totalChildCount <= Math.max(4, touchedChildren.length + 1);
+
+    return {
+      highlightElement: useContainer ? container : null,
+      highlightRect: useContainer ? containerRect : highlightRect,
+      highlightMode: useContainer ? 'container' : 'range',
+    };
+  };
 
   const buildSelectorHint = (el) => {
     const parts = [];
@@ -402,6 +745,14 @@ function runAccordionDetector(overrides = {}) {
         box-shadow: inset 0 0 0 2px var(--accordion-detector-color) !important;
         border-radius: 6px !important;
       }
+      .__accordion-detector-outline {
+        position: absolute;
+        z-index: ${config.overlayZIndex};
+        pointer-events: none;
+        border: 3px solid var(--accordion-detector-color);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+      }
       .__accordion-detector-badge {
         position: absolute;
         z-index: ${config.overlayZIndex};
@@ -423,6 +774,192 @@ function runAccordionDetector(overrides = {}) {
     `;
     document.documentElement.appendChild(styleEl);
     state.styleEl = styleEl;
+  };
+
+  const createOverlayBox = (rect, color, className) => {
+    const overlay = document.createElement('div');
+    overlay.className = className;
+    overlay.style.setProperty('--accordion-detector-color', color);
+    overlay.style.left = `${window.scrollX + rect.left}px`;
+    overlay.style.top = `${window.scrollY + rect.top}px`;
+    overlay.style.width = `${Math.max(0, rect.width)}px`;
+    overlay.style.height = `${Math.max(0, rect.height)}px`;
+    document.body.appendChild(overlay);
+    state.overlays.push(overlay);
+    return overlay;
+  };
+
+  const translateFrameRect = (frameEl, innerRect) => {
+    const frameRect = frameEl.getBoundingClientRect();
+    const left = frameRect.left + (innerRect?.x ?? innerRect?.left ?? 0);
+    const top = frameRect.top + (innerRect?.y ?? innerRect?.top ?? 0);
+    const width = innerRect?.width ?? Math.max(0, (innerRect?.right ?? left) - (innerRect?.left ?? left));
+    const height = innerRect?.height ?? Math.max(0, (innerRect?.bottom ?? top) - (innerRect?.top ?? top));
+
+    return {
+      x: left,
+      y: top,
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+    };
+  };
+
+  const rectArea = (rect) => Math.max(0, (rect?.width || 0) * (rect?.height || 0));
+
+  const rectContains = (outerRect, innerRect) => {
+    if (!outerRect || !innerRect) {
+      return false;
+    }
+
+    return outerRect.left <= innerRect.left && outerRect.top <= innerRect.top && outerRect.right >= innerRect.right && outerRect.bottom >= innerRect.bottom;
+  };
+
+  const rectOverlapRatio = (leftRect, rightRect) => {
+    if (!leftRect || !rightRect) {
+      return 0;
+    }
+
+    const overlapLeft = Math.max(leftRect.left, rightRect.left);
+    const overlapTop = Math.max(leftRect.top, rightRect.top);
+    const overlapRight = Math.min(leftRect.right, rightRect.right);
+    const overlapBottom = Math.min(leftRect.bottom, rightRect.bottom);
+    const overlapWidth = Math.max(0, overlapRight - overlapLeft);
+    const overlapHeight = Math.max(0, overlapBottom - overlapTop);
+    const overlapArea = overlapWidth * overlapHeight;
+    const minArea = Math.max(1, Math.min(rectArea(leftRect), rectArea(rightRect)));
+
+    return overlapArea / minArea;
+  };
+
+  const dedupeFrameResults = (results) => {
+    const accepted = [];
+
+    const sorted = [...results].sort((left, right) => right.score - left.score || rectArea(left.highlightRect) - rectArea(right.highlightRect));
+    for (const result of sorted) {
+      const duplicate = accepted.some((existing) => {
+        if (existing.__frameElement !== result.__frameElement) {
+          return false;
+        }
+
+        const nested = rectContains(existing.highlightRect, result.highlightRect) || rectContains(result.highlightRect, existing.highlightRect);
+        if (!nested) {
+          return false;
+        }
+
+        if (rectOverlapRatio(existing.highlightRect, result.highlightRect) < 0.75) {
+          return false;
+        }
+
+        return existing.score >= result.score - 8;
+      });
+
+      if (!duplicate) {
+        accepted.push(result);
+      }
+    }
+
+    return accepted;
+  };
+
+  const buildFrameSelectorHint = (frameEl, innerSelectorHint) => {
+    const frameHint = buildSelectorHint(frameEl);
+    return innerSelectorHint ? `${frameHint} :: ${innerSelectorHint}` : frameHint;
+  };
+
+  const collectFrameResults = (limit) => {
+    if (!config.scanFrames || limit <= 0) {
+      return [];
+    }
+
+    const frameResults = [];
+    const detectorSource = `window.runAccordionDetector = ${runAccordionDetector.toString()};`;
+
+    for (const frameEl of document.querySelectorAll('iframe')) {
+      if (frameResults.length >= limit) {
+        break;
+      }
+
+      try {
+        const frameWindow = frameEl.contentWindow;
+        const frameDocument = frameEl.contentDocument;
+        if (!frameWindow || !frameDocument?.documentElement) {
+          continue;
+        }
+
+        if (frameWindow.location?.href === window.location.href) {
+          continue;
+        }
+
+        if (typeof frameWindow.runAccordionDetector !== 'function') {
+          frameWindow.eval(detectorSource);
+        }
+
+        const frameApi = frameWindow.runAccordionDetector({
+          maxResults: limit - frameResults.length,
+          includeHidden: config.includeHidden,
+          highlightVisible: false,
+          scanFrames: false,
+        });
+
+        for (const result of frameApi.results) {
+          if (frameResults.length >= limit) {
+            break;
+          }
+
+          const translatedRect = translateFrameRect(frameEl, result.rect);
+          if (translatedRect.width < 8 || translatedRect.height < 8) {
+            continue;
+          }
+
+          frameResults.push({
+            type: result.type,
+            orientation: result.orientation,
+            visibilityState: result.visibilityState,
+            hiddenReason: result.hiddenReason,
+            score: result.score,
+            reasons: [...result.reasons, 'same-origin-iframe-example'],
+            sectionCount: result.sectionCount,
+            expandedCount: result.expandedCount,
+            collapsedCount: result.collapsedCount,
+            labels: result.labels,
+            selectorHint: buildFrameSelectorHint(frameEl, result.selectorHint),
+            rect: summarizeRect(translatedRect),
+            highlightRect: translatedRect,
+            highlighted: config.highlightVisible,
+            container: frameEl,
+            targetElement: null,
+            sections: result.sections,
+            __frameElement: frameEl,
+          });
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return dedupeFrameResults(frameResults).slice(0, limit);
+  };
+
+  const paintFrameResult = (result, index) => {
+    if (!config.highlightVisible) {
+      return;
+    }
+
+    const color = config.palette[index % config.palette.length];
+    createOverlayBox(result.highlightRect || result.rect, color, '__accordion-detector-outline');
+
+    const badge = document.createElement('div');
+    badge.className = '__accordion-detector-badge';
+    badge.style.setProperty('--accordion-detector-color', color);
+    badge.style.left = `${Math.max(4, window.scrollX + (result.highlightRect?.left ?? result.rect.x))}px`;
+    badge.style.top = `${Math.max(4, window.scrollY + (result.highlightRect?.top ?? result.rect.y) - 24)}px`;
+    badge.textContent = `accordion ${index + 1} | ${result.type} | ${result.sectionCount} sections | ${result.expandedCount} open | score ${result.score}`;
+    document.body.appendChild(badge);
+    state.overlays.push(badge);
   };
 
   const cleanup = () => {
@@ -479,9 +1016,13 @@ function runAccordionDetector(overrides = {}) {
     }
 
     const color = config.palette[index % config.palette.length];
-    candidate.container.classList.add('__accordion-detector-container');
-    candidate.container.style.setProperty('--accordion-detector-color', color);
-    candidate.container.dataset.accordionDetectorId = String(index + 1);
+    if (candidate.highlightElement instanceof Element) {
+      candidate.highlightElement.classList.add('__accordion-detector-container');
+      candidate.highlightElement.style.setProperty('--accordion-detector-color', color);
+      candidate.highlightElement.dataset.accordionDetectorId = String(index + 1);
+    } else {
+      createOverlayBox(candidate.rect, color, '__accordion-detector-outline');
+    }
 
     candidate.visibleTriggers.forEach((trigger) => {
       trigger.classList.add('__accordion-detector-item');
@@ -495,12 +1036,11 @@ function runAccordionDetector(overrides = {}) {
       panel.dataset.accordionDetectorGroup = String(index + 1);
     });
 
-    const rect = candidate.container.getBoundingClientRect();
     const badge = document.createElement('div');
     badge.className = '__accordion-detector-badge';
     badge.style.setProperty('--accordion-detector-color', color);
-    badge.style.left = `${Math.max(4, window.scrollX + rect.left)}px`;
-    badge.style.top = `${Math.max(4, window.scrollY + rect.top - 24)}px`;
+    badge.style.left = `${Math.max(4, window.scrollX + candidate.rect.left)}px`;
+    badge.style.top = `${Math.max(4, window.scrollY + candidate.rect.top - 24)}px`;
     badge.textContent = `accordion ${index + 1} | ${candidate.type} | ${candidate.sectionCount} sections | ${candidate.expandedCount} open | score ${candidate.score}`;
     document.body.appendChild(badge);
     state.overlays.push(badge);
@@ -509,20 +1049,21 @@ function runAccordionDetector(overrides = {}) {
   const revealCandidate = (result) => {
     if (!result) return;
 
-    const container = result.container;
-    if (!(container instanceof Element)) return;
+    const rect = result.highlightRect || result.targetElement?.getBoundingClientRect() || result.container?.getBoundingClientRect();
+    if (!rect) return;
 
-    const rect = container.getBoundingClientRect();
     const top = window.scrollY + rect.top - Math.max(24, (window.innerHeight - rect.height) / 3);
     window.scrollTo({
       top: Math.max(0, top),
       behavior: 'smooth',
     });
 
-    container.classList.add('__accordion-detector-flash');
-    window.setTimeout(() => {
-      container.classList.remove('__accordion-detector-flash');
-    }, 1400);
+    if (result.targetElement instanceof Element) {
+      result.targetElement.classList.add('__accordion-detector-flash');
+      window.setTimeout(() => {
+        result.targetElement.classList.remove('__accordion-detector-flash');
+      }, 1400);
+    }
 
     console.group(`Reveal accordion ${result.id}`);
     console.log('selectorHint:', result.selectorHint);
@@ -531,17 +1072,15 @@ function runAccordionDetector(overrides = {}) {
     console.groupEnd();
   };
 
-  const scoreContainer = (container) => {
+  const scoreSectionCandidate = (container, sections, runCount) => {
     if (!(container instanceof Element)) return null;
     if (config.ignoredTags.has(container.tagName)) return null;
     if (container === document.body || container === document.documentElement) return null;
     if (hasExcludedName(container) && !hasAccordionName(container)) return null;
     if (container.matches('[role="tablist"], [role="menu"], [role="tree"], nav')) return null;
 
-    const sequenceSections = buildSequenceSections(container);
-    const wrappedSections = buildWrappedSections(container);
-    const sections = dedupeSections(sequenceSections.length >= wrappedSections.length ? sequenceSections : wrappedSections);
-    if (sections.length < config.minSections || sections.length > config.maxSections) {
+    const singleSectionPattern = sections.length === 1 && isStrongSingleSectionPattern(container, sections[0]);
+    if ((sections.length < config.minSections && !singleSectionPattern) || sections.length > config.maxSections) {
       return null;
     }
 
@@ -557,6 +1096,7 @@ function runAccordionDetector(overrides = {}) {
 
     const triggerLabels = triggers.map(normalizeText).filter(Boolean);
     const uniqueLabels = unique(triggerLabels).slice(0, 20);
+    const uniqueLabelRatio = uniqueLabels.length / Math.max(1, sections.length);
     const headingWrappedCount = sections.filter((section) => isHeading(section.trigger.parentElement || section.wrapper) || isHeading(section.wrapper)).length;
     const nextSiblingPairCount = sections.filter((section) => section.wrapper.nextElementSibling === section.panel || section.trigger.parentElement?.nextElementSibling === section.panel).length;
     const ariaPairCount = sections.filter((section) => section.trigger.hasAttribute('aria-controls') || section.panel.getAttribute('aria-labelledby')).length;
@@ -564,6 +1104,16 @@ function runAccordionDetector(overrides = {}) {
     const reusedTriggerRowPanels = sections.filter((section) => sections.some((other) => other !== section && (other.wrapper === section.panel || other.trigger === section.panel))).length;
     const panelContentCount = panels.filter((panel) => {
       return panel.querySelector(panelContentSelector) || normalizeText(panel).length >= 24;
+    }).length;
+    const codeLikePanels = panels.filter((panel) => {
+      const classText = classTextFor(panel);
+      const text = normalizeText(panel);
+      return (
+        panel.matches('pre, code') ||
+        panel.querySelector('pre, code') ||
+        /example|highlight|code|snippet|tryit/i.test(classText) ||
+        /^example\b|^try it yourself\b/i.test(text)
+      );
     }).length;
     const navHeavyPanels = panels.filter((panel) => {
       const links = panel.querySelectorAll('a[href]').length;
@@ -573,15 +1123,46 @@ function runAccordionDetector(overrides = {}) {
     }).length;
     const expandedCount = sections.filter((section) => getSectionState(section) === 'expanded').length;
     const collapsedCount = sections.length - expandedCount;
-    const rect = container.getBoundingClientRect();
+    const highlightGeometry = getRunHighlightGeometry(container, sections);
+    const rect = highlightGeometry.highlightRect;
+    const containerRect = container.getBoundingClientRect();
     const viewport = viewportSize();
     const triggerWidths = triggers.map((trigger) => trigger.getBoundingClientRect().width);
     const avgTriggerWidth = average(triggerWidths);
     const headingWrappedRatio = headingWrappedCount / Math.max(1, sections.length);
     const panelContentRatio = panelContentCount / Math.max(1, sections.length);
+    const codeLikePanelRatio = codeLikePanels / Math.max(1, sections.length);
     const navHeavyRatio = navHeavyPanels / Math.max(1, sections.length);
+    const triggerSignatureRatio = dominantRatio(triggers.map((trigger) => normalizeClassSignature(trigger)));
+    const panelSignatureRatio = dominantRatio(panels.map((panel) => normalizeClassSignature(panel)));
     const rootClassText = classTextFor(container);
     const insideNav = !!container.closest('nav, header');
+
+    if (singleSectionPattern && insideNav && !hasAccordionName(container)) {
+      return null;
+    }
+
+    if (insideNav && navHeavyRatio >= 0.4 && !hasAccordionName(container)) {
+      return null;
+    }
+
+    if (uniqueLabelRatio < 0.6 && !hasAccordionName(container) && detailsCount === 0) {
+      return null;
+    }
+
+    if (
+      sections.length >= 4 &&
+      triggerSignatureRatio < 0.5 &&
+      panelSignatureRatio < 0.5 &&
+      !hasAccordionName(container) &&
+      detailsCount === 0
+    ) {
+      return null;
+    }
+
+    if (codeLikePanelRatio >= 0.3 && !hasAccordionName(container) && detailsCount === 0) {
+      return null;
+    }
 
     let score = 0;
     const reasons = [];
@@ -625,13 +1206,21 @@ function runAccordionDetector(overrides = {}) {
       score += 12;
       reasons.push('content-bearing-panels');
     }
-    if (avgTriggerWidth >= rect.width * 0.65) {
+    if (avgTriggerWidth >= containerRect.width * 0.65) {
       score += 6;
       reasons.push('full-width-section-triggers');
     }
-    if (rect.width <= viewport.width * 0.95 && rect.height <= viewport.height * 1.4) {
+    if (containerRect.width <= viewport.width * 0.95 && containerRect.height <= viewport.height * 1.4) {
       score += 4;
       reasons.push('bounded-section-group');
+    }
+    if (singleSectionPattern) {
+      score += 20;
+      reasons.push('single-direct-toggle-pair');
+    }
+    if (runCount > 1) {
+      score += 6;
+      reasons.push('multiple-local-section-runs');
     }
 
     if (reusedTriggerRowPanels > 0) {
@@ -649,6 +1238,18 @@ function runAccordionDetector(overrides = {}) {
     if (navHeavyRatio >= 0.5) {
       score -= 20;
       reasons.push('navigation-heavy-panels');
+    }
+    if (triggerSignatureRatio >= 0.7) {
+      score += 8;
+      reasons.push('uniform-trigger-signature');
+    }
+    if (panelSignatureRatio >= 0.7) {
+      score += 6;
+      reasons.push('uniform-panel-signature');
+    }
+    if (codeLikePanelRatio >= 0.25) {
+      score -= 18;
+      reasons.push('code-example-panels');
     }
     if (uniqueLabels.length <= 1) {
       score -= 20;
@@ -689,14 +1290,28 @@ function runAccordionDetector(overrides = {}) {
       labels: uniqueLabels,
       visibility: containerVisibility,
       highlightable,
+      highlightElement: highlightGeometry.highlightElement,
+      highlightMode: highlightGeometry.highlightMode,
     };
+  };
+
+  const scoreContainer = (container) => {
+    if (!(container instanceof Element)) return [];
+
+    const sequenceSections = buildSequenceSections(container);
+    const wrappedSections = buildWrappedSections(container);
+    const candidateSections = dedupeSections(sequenceSections.length >= wrappedSections.length ? sequenceSections : wrappedSections);
+    const runs = getCandidateRuns(container, candidateSections);
+
+    return runs
+      .map((sections) => scoreSectionCandidate(container, sections, runs.length))
+      .filter(Boolean);
   };
 
   const gatherCandidates = () => {
     return [...document.querySelectorAll('body *')]
       .filter((el) => !config.ignoredTags.has(el.tagName))
-      .map((el) => scoreContainer(el))
-      .filter(Boolean)
+      .flatMap((el) => scoreContainer(el))
       .sort((a, b) => b.score - a.score || a.depth - b.depth);
   };
 
@@ -733,8 +1348,7 @@ function runAccordionDetector(overrides = {}) {
   const candidates = dedupeCandidates(gatherCandidates()).slice(0, config.maxResults);
   candidates.forEach((candidate, index) => paintCandidate(candidate, index));
 
-  const results = candidates.map((candidate, index) => ({
-    id: index + 1,
+  const topResults = candidates.map((candidate) => ({
     type: candidate.type,
     orientation: candidate.orientation,
     visibilityState: candidate.visibility.state,
@@ -745,10 +1359,12 @@ function runAccordionDetector(overrides = {}) {
     expandedCount: candidate.expandedCount,
     collapsedCount: candidate.collapsedCount,
     labels: candidate.labels,
-    selectorHint: buildSelectorHint(candidate.container),
+    selectorHint: buildSelectorHint(candidate.highlightElement || candidate.container),
     rect: summarizeRect(candidate.rect),
     highlighted: candidate.highlightable && config.highlightVisible,
     container: candidate.container,
+    targetElement: candidate.highlightElement || null,
+    highlightRect: candidate.rect,
     sections: candidate.sections.map((section) => ({
       trigger: section.trigger,
       panel: section.panel,
@@ -757,6 +1373,16 @@ function runAccordionDetector(overrides = {}) {
       pattern: section.pattern,
     })),
   }));
+
+  const frameResults = collectFrameResults(Math.max(0, config.maxResults - topResults.length));
+  frameResults.forEach((result, index) => paintFrameResult(result, topResults.length + index));
+
+  const results = [...topResults, ...frameResults]
+    .slice(0, config.maxResults)
+    .map((result, index) => ({
+      ...result,
+      id: index + 1,
+    }));
 
   state.results = results;
 
