@@ -100,6 +100,7 @@ function runSliderDetector(overrides = {}) {
   const hasProgressName = (el) => /progress|meter|loader|loading/i.test(classTextFor(el));
   const isThumbLike = (el) => /thumb|handle|knob|grab|dot/i.test(classTextFor(el));
   const isTrackLike = (el) => /track|rail|bar|fill|progress|range/i.test(classTextFor(el));
+  const hasAriaSliderLabel = (el) => /slider|range|seek|scrubber|knob|thumb/i.test(String(el.getAttribute('aria-label') || ''));
 
   const findRoot = (el) => {
     if (!(el instanceof Element)) return null;
@@ -138,7 +139,7 @@ function runSliderDetector(overrides = {}) {
     ]).filter((el) => el !== root && isTrackLike(el));
     const nativeRange = root.matches('input[type="range"]');
     const roleSlider = root.matches('[role="slider"]') || root.querySelector('[role="slider"]');
-    const focusable = isFocusable(root) || !!root.querySelector('input[type="range"], [role="slider"], [tabindex]:not([tabindex="-1"])');
+    const focusable = isFocusable(root) || !!root.querySelector('input[type="range"], [role="slider"], [tabindex]:not([tabindex="-1"]), button, [aria-label*="slider" i], [aria-label*="range" i]');
     const readOnly = root.getAttribute('aria-readonly') === 'true';
     const min = nativeRange ? Number(root.min || 0) : getNumericAttr(root, 'aria-valuemin', 'min');
     const max = nativeRange ? Number(root.max || 100) : getNumericAttr(root, 'aria-valuemax', 'max');
@@ -147,7 +148,7 @@ function runSliderDetector(overrides = {}) {
     const interactiveClass = /cursor|grab/.test(style.cursor) || focusable;
     const orientation = inferOrientation(root, rect);
 
-    if (!nativeRange && !roleSlider && !hasSliderName(root) && thumbCandidates.length === 0) return null;
+    if (!nativeRange && !roleSlider && !hasSliderName(root) && !hasAriaSliderLabel(root) && thumbCandidates.length === 0) return null;
     if (!nativeRange && !roleSlider && thumbCandidates.length === 0) return null;
     if (!focusable && thumbCandidates.length === 0 && !nativeRange) return null;
     if (rect.width < 18 || rect.height < 18) return null;
@@ -166,6 +167,10 @@ function runSliderDetector(overrides = {}) {
     if (hasSliderName(root)) {
       score += 14;
       reasons.push('slider-like-name');
+    }
+    if (hasAriaSliderLabel(root)) {
+      score += 10;
+      reasons.push('aria-slider-label');
     }
     if (thumbCandidates.length >= 1) {
       score += 14;
@@ -226,10 +231,105 @@ function runSliderDetector(overrides = {}) {
 
   const gatherCandidates = () => {
     const raw = unique([
-      ...document.querySelectorAll('input[type="range"], [role="slider"], [class*="slider"], [class*="range"], [id*="slider"], [id*="range"]'),
+      ...document.querySelectorAll(
+        'input[type="range"], [role="slider"], [class*="slider"], [class*="range"], [id*="slider"], [id*="range"], [class*="track"], [id*="track"], [class*="knob"], [class*="thumb"], [class*="handle"], button[aria-label*="slider" i], button[aria-label*="range" i]'
+      ),
     ]);
-    const candidates = unique(raw.map((el) => findRoot(el)));
-    return candidates.map((el) => scoreRoot(el)).filter(Boolean).sort((a, b) => b.score - a.score || a.depth - b.depth);
+    const inDocumentCandidates = unique(raw.map((el) => findRoot(el)))
+      .map((el) => scoreRoot(el))
+      .filter(Boolean);
+
+    const iframeCandidates = gatherIframeCandidates();
+    return [...inDocumentCandidates, ...iframeCandidates].sort((a, b) => b.score - a.score || a.depth - b.depth);
+  };
+
+  const scanFrameSignals = (frameDoc) => {
+    const nativeRanges = frameDoc.querySelectorAll('input[type="range"]').length;
+    const roleSliders = frameDoc.querySelectorAll('[role="slider"]').length;
+    const sliderNamed = frameDoc.querySelectorAll('[class*="slider"], [id*="slider"], [class*="range"], [id*="range"]').length;
+    const tracks = frameDoc.querySelectorAll('[class*="track"], [class*="rail"], [class*="bar"], [class*="fill"], [id*="track"]').length;
+    const thumbs = frameDoc.querySelectorAll('[class*="thumb"], [class*="handle"], [class*="knob"], [class*="grab"], [id*="thumb"], [id*="knob"]').length;
+    const ariaSliderButtons = frameDoc.querySelectorAll('button[aria-label*="slider" i], button[aria-label*="range" i], [aria-label*="slider" i][tabindex]').length;
+    return {
+      nativeRanges,
+      roleSliders,
+      sliderNamed,
+      tracks,
+      thumbs,
+      ariaSliderButtons,
+    };
+  };
+
+  const scoreIframe = (frameEl) => {
+    if (!(frameEl instanceof HTMLIFrameElement)) return null;
+    let frameDoc;
+    let frameWindow;
+    try {
+      frameDoc = frameEl.contentDocument;
+      frameWindow = frameEl.contentWindow;
+    } catch {
+      return null;
+    }
+    if (!frameDoc || !frameWindow || !frameDoc.documentElement) return null;
+
+    const signals = scanFrameSignals(frameDoc);
+    if (signals.nativeRanges + signals.roleSliders + signals.sliderNamed + signals.thumbs === 0) return null;
+
+    const rect = frameEl.getBoundingClientRect();
+    if (rect.width < 24 || rect.height < 24) return null;
+
+    const visibility = getVisibilityInfo(frameEl);
+    let score = 0;
+    const reasons = [];
+
+    if (signals.nativeRanges > 0) {
+      score += 30;
+      reasons.push('iframe-native-range');
+    }
+    if (signals.roleSliders > 0) {
+      score += 24;
+      reasons.push('iframe-slider-role');
+    }
+    if (signals.sliderNamed > 0) {
+      score += 14;
+      reasons.push('iframe-slider-named-elements');
+    }
+    if (signals.tracks > 0 && signals.thumbs > 0) {
+      score += 18;
+      reasons.push('iframe-track-thumb-pair');
+    }
+    if (signals.ariaSliderButtons > 0) {
+      score += 10;
+      reasons.push('iframe-aria-slider-control');
+    }
+    if (visibility.visible) {
+      score += 4;
+      reasons.push('visible-slider');
+    }
+
+    if (score < config.minScore) return null;
+
+    return {
+      container: frameEl,
+      score,
+      reasons,
+      rect,
+      depth: getDepth(frameEl),
+      visibility,
+      highlightable: visibility.visible,
+      orientation: 'unknown',
+      handleCount: Math.max(1, signals.nativeRanges + signals.roleSliders + signals.thumbs),
+      min: null,
+      max: null,
+      value: null,
+      nativeRange: signals.nativeRanges > 0,
+      isIframeCandidate: true,
+    };
+  };
+
+  const gatherIframeCandidates = () => {
+    const iframes = [...document.querySelectorAll('iframe')];
+    return iframes.map((frameEl) => scoreIframe(frameEl)).filter(Boolean);
   };
 
   const dedupeCandidates = (candidates) => {
@@ -309,7 +409,8 @@ function runSliderDetector(overrides = {}) {
     badge.style.setProperty('--slider-detector-color', color);
     badge.style.left = `${Math.max(4, window.scrollX + rect.left)}px`;
     badge.style.top = `${Math.max(4, window.scrollY + rect.top - 24)}px`;
-    badge.textContent = `slider ${index + 1} | ${candidate.orientation} | score ${candidate.score}`;
+    const sourceLabel = candidate.isIframeCandidate ? 'iframe' : candidate.orientation;
+    badge.textContent = `slider ${index + 1} | ${sourceLabel} | score ${candidate.score}`;
     document.body.appendChild(badge);
     state.overlays.push(badge);
   };
