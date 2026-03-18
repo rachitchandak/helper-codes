@@ -121,16 +121,39 @@ function runMenuBarDetector(overrides = {}) {
     return unique(branches);
   };
 
+  const getTopLevelBranchOwners = (container, topLevelItems = getTopLevelNavItems(container)) => {
+    return unique(
+      topLevelItems
+        .map((item) => {
+          const parent = item.parentElement;
+          if (parent && (parent.tagName === 'LI' || parent.getAttribute('role') === 'none')) {
+            return parent;
+          }
+          return item;
+        })
+        .filter(Boolean)
+        .filter((node) => container.contains(node))
+    );
+  };
+
   const isSubmenuContainer = (el) => {
     if (!(el instanceof Element)) return false;
     if (config.ignoredTags.has(el.tagName)) return false;
     const interactiveDescendants = el.querySelectorAll('a[href], button, summary, [onclick], [tabindex]').length;
     if (interactiveDescendants < 3) return false;
     const style = window.getComputedStyle(el);
+    const explicitPopupRole = el.matches('[role="menu"], [role="listbox"]');
     const popupNamed = /menu|submenu|dropdown|popup|panel|flyout|popover|listbox/i.test(classTextFor(el));
     const popupPositioned = style.position === 'absolute' || style.position === 'fixed';
     const popupHidden = style.display === 'none' || style.visibility === 'hidden';
-    return popupNamed || popupPositioned || popupHidden || el.tagName === 'UL' || el.tagName === 'OL';
+    const menuContextAncestor = el.parentElement?.closest('[role="menubar"], [role="menu"], nav, header, [class*="menu"], [class*="menubar"], [class*="dropdown"], [class*="submenu"], [class*="popover"], [class*="flyout"]');
+    const listInMenuContext =
+      (el.tagName === 'UL' || el.tagName === 'OL') &&
+      !!menuContextAncestor &&
+      !['BODY', 'HTML'].includes(menuContextAncestor.tagName);
+    const hiddenPopupLike = popupHidden && (explicitPopupRole || popupNamed || popupPositioned || listInMenuContext);
+
+    return explicitPopupRole || popupNamed || popupPositioned || hiddenPopupLike || listInMenuContext;
   };
 
   const getTreeSignals = (container, items) => {
@@ -690,6 +713,7 @@ function runMenuBarDetector(overrides = {}) {
     const descendantItems = getInteractiveDescendants(container, config.includeHidden);
     const topLevelItems = getTopLevelNavItems(container);
     const directBranchContainers = getDirectBranchContainers(container);
+    const topLevelBranchOwners = getTopLevelBranchOwners(container, topLevelItems);
     const preferTopLevelScope =
       visibility.visible &&
       topLevelItems.length >= config.minItems &&
@@ -720,6 +744,9 @@ function runMenuBarDetector(overrides = {}) {
     const contentSignals = getContentSignals(filteredItems);
     const menubarSignals = getMenubarPatternSignals(container, filteredItems, orientation);
     const treeSignals = getTreeSignals(container, filteredItems);
+    const explicitMenuRole =
+      container.matches('[role="menubar"], [role="menu"]') ||
+      filteredItems.some((item) => item.matches('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]'));
     const viewport = viewportSize();
     const headerLike = !!(container.closest('header') || container.tagName === 'HEADER' || rect.top < viewport.height * 0.18);
     const scrollSnapType = style.scrollSnapType || 'none';
@@ -760,6 +787,15 @@ function runMenuBarDetector(overrides = {}) {
     }
 
     if (treeLike) {
+      return null;
+    }
+
+    if (
+      !explicitMenuRole &&
+      !menubarSignals.navAncestor &&
+      !hasMenuLikeName(container) &&
+      behaviorSignals.submenuTriggerCount === 0
+    ) {
       return null;
     }
 
@@ -951,6 +987,11 @@ function runMenuBarDetector(overrides = {}) {
       allItems: filteredItems,
       visibleItems,
       hiddenItems,
+      topLevelItems,
+      topLevelBranchOwners,
+      directBranchContainers,
+      behaviorSignals,
+      menubarSignals,
       score,
       reasons,
       orientation,
@@ -971,10 +1012,59 @@ function runMenuBarDetector(overrides = {}) {
       .sort((a, b) => b.score - a.score || a.depth - b.depth);
   };
 
+  const isRootMenuCandidate = (candidate) => {
+    if (!candidate) return false;
+
+    return (
+      candidate.menubarSignals.topLevelCount >= config.minItems &&
+      (
+        candidate.behaviorSignals.submenuTriggerCount > 0 ||
+        candidate.menubarSignals.siblingPopupCount > 0 ||
+        candidate.menubarSignals.wrappedPopupCount > 0 ||
+        candidate.menubarSignals.navAncestor ||
+        candidate.type === 'menu-bar' ||
+        candidate.type === 'top-nav' ||
+        candidate.type === 'nav-block'
+      )
+    );
+  };
+
+  const isNestedOwnedSubmenu = (ownerCandidate, nestedCandidate) => {
+    if (!ownerCandidate || !nestedCandidate || ownerCandidate === nestedCandidate) return false;
+    if (!ownerCandidate.container.contains(nestedCandidate.container)) return false;
+    if (!isSubmenuContainer(nestedCandidate.container)) return false;
+    if (!isRootMenuCandidate(ownerCandidate)) return false;
+
+    return ownerCandidate.directBranchContainers.some((branch) => {
+      return branch === nestedCandidate.container || branch.contains(nestedCandidate.container);
+    });
+  };
+
+  const isOwnedBranchCandidate = (ownerCandidate, nestedCandidate) => {
+    if (!ownerCandidate || !nestedCandidate || ownerCandidate === nestedCandidate) return false;
+    if (!ownerCandidate.container.contains(nestedCandidate.container)) return false;
+    if (!isRootMenuCandidate(ownerCandidate)) return false;
+
+    return ownerCandidate.topLevelBranchOwners.some((branchOwner) => {
+      if (branchOwner === nestedCandidate.container || branchOwner.contains(nestedCandidate.container)) {
+        return true;
+      }
+
+      const ownedItems = nestedCandidate.allItems.filter((item) => branchOwner.contains(item)).length;
+      return ownedItems >= Math.max(config.minItems, nestedCandidate.allItems.length - 1);
+    });
+  };
+
   const dedupeCandidates = (candidates) => {
+    const ownershipFiltered = candidates.filter((candidate) => {
+      return !candidates.some((otherCandidate) => {
+        return isNestedOwnedSubmenu(otherCandidate, candidate) || isOwnedBranchCandidate(otherCandidate, candidate);
+      });
+    });
+
     const accepted = [];
 
-    for (const candidate of candidates) {
+    for (const candidate of ownershipFiltered) {
       const duplicate = accepted.some((existing) => {
         const nested = existing.container.contains(candidate.container) || candidate.container.contains(existing.container);
         if (!nested) return false;
