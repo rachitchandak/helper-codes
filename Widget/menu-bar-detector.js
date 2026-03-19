@@ -136,6 +136,36 @@ function runMenuBarDetector(overrides = {}) {
     );
   };
 
+  const isMenuBranchOwner = (el) => {
+    if (!(el instanceof Element)) return false;
+    const role = el.getAttribute('role');
+    return el.tagName === 'LI' || role === 'none' || role === 'presentation';
+  };
+
+  const getAncestorMenuContexts = (el) => {
+    const contexts = [];
+
+    for (let current = el?.parentElement; current; current = current.parentElement) {
+      if (current.matches('[role="menubar"], [role="menu"]') || isSubmenuContainer(current)) {
+        contexts.push(current);
+      }
+    }
+
+    return unique(contexts);
+  };
+
+  const getAncestorBranchOwners = (el) => {
+    const owners = [];
+
+    for (let current = el?.parentElement; current; current = current.parentElement) {
+      if (isMenuBranchOwner(current)) {
+        owners.push(current);
+      }
+    }
+
+    return unique(owners);
+  };
+
   const isSubmenuContainer = (el) => {
     if (!(el instanceof Element)) return false;
     if (config.ignoredTags.has(el.tagName)) return false;
@@ -143,7 +173,7 @@ function runMenuBarDetector(overrides = {}) {
     if (interactiveDescendants < 3) return false;
     const style = window.getComputedStyle(el);
     const explicitPopupRole = el.matches('[role="menu"], [role="listbox"]');
-    const popupNamed = /menu|submenu|dropdown|popup|panel|flyout|popover|listbox/i.test(classTextFor(el));
+    const popupNamed = /menu|submenu|dropdown|popup|panel|flyout|popover|listbox|subnav|sub-nav|nav-lvl|nav-level|mega-menu|megamenu/i.test(classTextFor(el));
     const popupPositioned = style.position === 'absolute' || style.position === 'fixed';
     const popupHidden = style.display === 'none' || style.visibility === 'hidden';
     const menuContextAncestor = el.parentElement?.closest('[role="menubar"], [role="menu"], nav, header, [class*="menu"], [class*="menubar"], [class*="dropdown"], [class*="submenu"], [class*="popover"], [class*="flyout"]');
@@ -604,6 +634,22 @@ function runMenuBarDetector(overrides = {}) {
         box-shadow: inset 0 0 0 2px var(--menu-detector-color) !important;
         border-radius: 6px !important;
       }
+      .__menu-detector-outline,
+      .__menu-detector-item-outline {
+        position: absolute;
+        z-index: ${config.overlayZIndex};
+        pointer-events: none;
+        box-sizing: border-box;
+      }
+      .__menu-detector-outline {
+        border: 3px solid var(--menu-detector-color);
+        border-radius: 8px;
+      }
+      .__menu-detector-item-outline {
+        border: 2px solid var(--menu-detector-color);
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--menu-detector-color) 12%, transparent);
+      }
       .__menu-detector-badge {
         position: absolute;
         z-index: ${config.overlayZIndex};
@@ -674,6 +720,28 @@ function runMenuBarDetector(overrides = {}) {
     }
   };
 
+  const createOverlayBox = (target, color, className, strokeWidth) => {
+    if (!(target instanceof Element)) {
+      return null;
+    }
+
+    const rect = target.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) {
+      return null;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = className;
+    overlay.style.setProperty('--menu-detector-color', color);
+    overlay.style.left = `${window.scrollX + rect.left - strokeWidth}px`;
+    overlay.style.top = `${window.scrollY + rect.top - strokeWidth}px`;
+    overlay.style.width = `${rect.width + strokeWidth * 2}px`;
+    overlay.style.height = `${rect.height + strokeWidth * 2}px`;
+    document.body.appendChild(overlay);
+    state.overlays.push(overlay);
+    return overlay;
+  };
+
   const paintCandidate = (candidate, index) => {
     if (!candidate.highlightable || !config.highlightVisible) {
       return;
@@ -684,11 +752,13 @@ function runMenuBarDetector(overrides = {}) {
     container.classList.add('__menu-detector-container');
     container.style.setProperty('--menu-detector-color', color);
     container.dataset.menuDetectorId = String(index + 1);
+    createOverlayBox(container, color, '__menu-detector-outline', 3);
 
     candidate.visibleItems.forEach((item) => {
       item.classList.add('__menu-detector-item');
       item.style.setProperty('--menu-detector-color', color);
       item.dataset.menuDetectorGroup = String(index + 1);
+      createOverlayBox(item, color, '__menu-detector-item-outline', 2);
     });
 
     const rect = candidate.container.getBoundingClientRect();
@@ -714,10 +784,19 @@ function runMenuBarDetector(overrides = {}) {
     const topLevelItems = getTopLevelNavItems(container);
     const directBranchContainers = getDirectBranchContainers(container);
     const topLevelBranchOwners = getTopLevelBranchOwners(container, topLevelItems);
-    const preferTopLevelScope =
-      visibility.visible &&
+    const ancestorMenuContexts = getAncestorMenuContexts(container);
+    const ancestorBranchOwners = getAncestorBranchOwners(container);
+    const topLevelScopedStructure =
       topLevelItems.length >= config.minItems &&
       directBranchContainers.length > 0;
+    const preferTopLevelScope =
+      topLevelScopedStructure &&
+      (
+        visibility.visible ||
+        topLevelBranchOwners.length >= config.minItems ||
+        hasMenuLikeName(container) ||
+        ancestorMenuContexts.length > 0
+      );
     const items = preferTopLevelScope
       ? topLevelItems
       : (directItems.length >= config.minItems ? directItems : descendantItems);
@@ -747,6 +826,18 @@ function runMenuBarDetector(overrides = {}) {
     const explicitMenuRole =
       container.matches('[role="menubar"], [role="menu"]') ||
       filteredItems.some((item) => item.matches('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]'));
+    const strongMenuFamilySignature =
+      topLevelScopedStructure &&
+      (
+        explicitMenuRole ||
+        hasMenuLikeName(container) ||
+        behaviorSignals.submenuTriggerCount > 0 ||
+        menubarSignals.siblingPopupCount > 0 ||
+        menubarSignals.wrappedPopupCount > 0 ||
+        menubarSignals.navAncestor
+      );
+    const strongMenubarSignature =
+      menubarSignals.horizontalTopLevel && strongMenuFamilySignature;
     const viewport = viewportSize();
     const headerLike = !!(container.closest('header') || container.tagName === 'HEADER' || rect.top < viewport.height * 0.18);
     const scrollSnapType = style.scrollSnapType || 'none';
@@ -773,10 +864,13 @@ function runMenuBarDetector(overrides = {}) {
       );
 
     const treeLike =
-      treeSignals.explicitTreeRole ||
-      treeSignals.score >= 28 ||
-      (orientation === 'vertical' && treeSignals.groupCount >= 2 && treeSignals.ownedBranches >= 1) ||
-      (treeSignals.labelWrapperRatio >= 0.5 && treeSignals.nestedInteractiveBranches >= 2);
+      !strongMenuFamilySignature &&
+      (
+        treeSignals.explicitTreeRole ||
+        treeSignals.score >= 28 ||
+        (orientation === 'vertical' && treeSignals.groupCount >= 2 && treeSignals.ownedBranches >= 1) ||
+        (treeSignals.labelWrapperRatio >= 0.5 && treeSignals.nestedInteractiveBranches >= 2)
+      );
 
     if (breadcrumbLike && behaviorSignals.submenuTriggerCount === 0) {
       return null;
@@ -990,6 +1084,8 @@ function runMenuBarDetector(overrides = {}) {
       topLevelItems,
       topLevelBranchOwners,
       directBranchContainers,
+      ancestorMenuContexts,
+      ancestorBranchOwners,
       behaviorSignals,
       menubarSignals,
       score,
@@ -1055,10 +1151,48 @@ function runMenuBarDetector(overrides = {}) {
     });
   };
 
+  const isDescendantMenuFamilyCandidate = (ownerCandidate, nestedCandidate) => {
+    if (!ownerCandidate || !nestedCandidate || ownerCandidate === nestedCandidate) return false;
+    if (!ownerCandidate.container.contains(nestedCandidate.container)) return false;
+    if (!isRootMenuCandidate(ownerCandidate)) return false;
+
+    const nestedMenuContexts = nestedCandidate.ancestorMenuContexts || [];
+    if (nestedMenuContexts.length === 0) {
+      return false;
+    }
+
+    const nestedBranchOwners = nestedCandidate.ancestorBranchOwners || [];
+    const ownsNestedMenuContext = ownerCandidate.directBranchContainers.some((branch) => {
+      return nestedMenuContexts.some((contextNode) => branch === contextNode || branch.contains(contextNode));
+    });
+
+    if (ownsNestedMenuContext) {
+      return true;
+    }
+
+    const ownsNestedBranchOwner = ownerCandidate.topLevelBranchOwners.some((branchOwner) => {
+      return nestedBranchOwners.some((nestedBranchOwner) => branchOwner === nestedBranchOwner || branchOwner.contains(nestedBranchOwner));
+    });
+
+    if (ownsNestedBranchOwner) {
+      return true;
+    }
+
+    const itemsInsideOwnedBranches = nestedCandidate.allItems.filter((item) => {
+      return ownerCandidate.topLevelBranchOwners.some((branchOwner) => branchOwner.contains(item));
+    }).length;
+
+    return itemsInsideOwnedBranches >= Math.max(config.minItems, nestedCandidate.allItems.length - 1);
+  };
+
   const dedupeCandidates = (candidates) => {
     const ownershipFiltered = candidates.filter((candidate) => {
       return !candidates.some((otherCandidate) => {
-        return isNestedOwnedSubmenu(otherCandidate, candidate) || isOwnedBranchCandidate(otherCandidate, candidate);
+        return (
+          isNestedOwnedSubmenu(otherCandidate, candidate) ||
+          isOwnedBranchCandidate(otherCandidate, candidate) ||
+          isDescendantMenuFamilyCandidate(otherCandidate, candidate)
+        );
       });
     });
 
