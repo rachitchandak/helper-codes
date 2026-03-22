@@ -27,6 +27,10 @@ function runFeedDetector(overrides = {}) {
     results: [],
   };
 
+  const FEED_NAME_RE = /feed|timeline|stream|activity|updates|posts|stories|news|results-list/i;
+  const FEED_LABEL_RE = /feed|timeline|stream|activity|updates|posts|stories|news/i;
+  const EXCLUDED_NAME_RE = /menu|menubar|tablist|tabs|carousel|slider|accordion|breadcrumb|tooltip|progress|gallery|grid|table|footer|sidebar|toc|masthead|navigation|nav(-|_)?/i;
+
   const unique = (items) => [...new Set(items.filter(Boolean))];
   const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
   const normalizeText = (el) => String(el?.textContent || '').replace(/\s+/g, ' ').trim();
@@ -86,6 +90,9 @@ function runFeedDetector(overrides = {}) {
       .join(' ')
       .trim();
   };
+  const hasFeedName = (el) => FEED_NAME_RE.test(classTextFor(el));
+  const hasFeedLabel = (value) => FEED_LABEL_RE.test(String(value || ''));
+  const hasExcludedName = (el) => EXCLUDED_NAME_RE.test(classTextFor(el));
   const getVisibilityInfo = (el) => {
     for (let current = el; current; current = current.parentElement) {
       const style = window.getComputedStyle(current);
@@ -103,9 +110,14 @@ function runFeedDetector(overrides = {}) {
     if (Number(style.opacity) === 0 && style.pointerEvents === 'none') return { state: 'hidden', reason: 'fully-transparent', visible: false };
     return { state: 'visible', reason: null, visible: true };
   };
-
-  const hasFeedName = (el) => /feed|timeline|stream|activity|updates|posts|stories|news|results-list/i.test(classTextFor(el));
-  const hasExcludedName = (el) => /menu|menubar|tablist|tabs|carousel|slider|accordion|breadcrumb|tooltip|progress|gallery|grid|table|footer|sidebar|toc/i.test(classTextFor(el));
+  const hasExcludedContext = (el) => {
+    for (let current = el; current && current !== document.body; current = current.parentElement) {
+      if (current.matches('nav, header, [role="navigation"], [role="menu"], [role="menubar"], [role="tablist"]')) return true;
+      if (hasExcludedName(current) && !hasFeedName(current) && !current.matches('[role="feed"]')) return true;
+      if (current.getAttribute('role') === 'application' && /menu|nav/i.test(classTextFor(current))) return true;
+    }
+    return false;
+  };
   const getDirectElementChildren = (el) => [...el.children].filter((child) => !config.ignoredTags.has(child.tagName));
   const hasArticleName = (el) => /article|story|post|update|item|entry|card|result|commentary/i.test(classTextFor(el));
 
@@ -161,6 +173,7 @@ function runFeedDetector(overrides = {}) {
     if (container === document.body || container === document.documentElement) return null;
     if (container.matches('nav, aside, footer, [role="navigation"], [role="tablist"], [role="menu"], [role="tree"], [role="grid"]')) return null;
     if (hasExcludedName(container) && !hasFeedName(container) && !container.matches('[role="feed"]')) return null;
+    if (hasExcludedContext(container) && !hasFeedName(container) && !container.matches('[role="feed"]')) return null;
 
     const extracted = extractItems(container);
     if (!extracted) return null;
@@ -182,16 +195,28 @@ function runFeedDetector(overrides = {}) {
     const orientation = inferOrientation(items);
     const nameSignal = hasFeedName(container);
     const label = getAccessibleLabel(container);
+    const labelSignal = hasFeedLabel(label);
     const scrollable = /(auto|scroll)/.test(style.overflowY) || container.scrollHeight > container.clientHeight + 80;
     const busySignal = container.getAttribute('aria-busy') === 'true';
     const roleFeed = container.getAttribute('role') === 'feed';
     const itemRectHeights = items.map((item) => item.getBoundingClientRect().height).filter((value) => value > 0);
     const avgHeight = average(itemRectHeights);
     const repeatedShape = itemRectHeights.length >= 3 && Math.max(...itemRectHeights) / Math.max(1, Math.min(...itemRectHeights)) < 3.5;
+    const itemHeadingCounts = items.map((item) => item.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]').length);
+    const avgHeadingCount = average(itemHeadingCounts);
+    const itemNestedSections = items.map((item) => item.querySelectorAll('section, article, [role="region"]').length);
+    const avgNestedSectionCount = average(itemNestedSections);
+    const directChildren = getDirectElementChildren(container);
+    const hasDirectStructuralChrome = directChildren.some((child) => child.matches('header, nav, [role="navigation"], [role="menu"], [role="menubar"], [role="tablist"]'));
+    const oversizedCompositeItems = avgHeight >= Math.max(900, Math.round(viewportSize().height * 0.7)) || avgTextLength >= 420;
+    const sectionLikeItems = avgHeadingCount > 2.5 || avgNestedSectionCount > 1.5;
+    const weakFeedSignals = !roleFeed && !nameSignal && !labelSignal && !scrollable && !busySignal;
 
     if (orientation === 'horizontal') return null;
     if (avgTextLength < 40 && articles < 2) return null;
     if (linkClusters >= Math.ceil(items.length * 0.6)) return null;
+    if (hasDirectStructuralChrome && weakFeedSignals) return null;
+    if (weakFeedSignals && articles < 2 && oversizedCompositeItems && sectionLikeItems) return null;
 
     let score = 0;
     const reasons = [];
@@ -204,7 +229,7 @@ function runFeedDetector(overrides = {}) {
       score += 18;
       reasons.push('feed-like-name');
     }
-    if (/feed|timeline|stream/i.test(label)) {
+    if (labelSignal) {
       score += 12;
       reasons.push('feed-label');
     }
@@ -256,6 +281,10 @@ function runFeedDetector(overrides = {}) {
     if (!scrollable && !roleFeed && !nameSignal) {
       score -= 8;
       reasons.push('missing-feed-behavior-signals');
+    }
+    if (oversizedCompositeItems && sectionLikeItems && weakFeedSignals) {
+      score -= 18;
+      reasons.push('section-wrapper-pattern');
     }
 
     if (score < config.minScore) return null;

@@ -51,7 +51,15 @@ function runCarouselDetector(overrides = {}) {
     if (!(el instanceof Element)) {
       return '';
     }
-    return `${String(el.id || '')} ${String(el.className || '')}`;
+    return `${el.tagName} ${String(el.id || '')} ${String(el.className || '')}`;
+  };
+
+  const hasTokenContaining = (el, needle) => {
+    if (!(el instanceof Element)) {
+      return false;
+    }
+    const pattern = new RegExp(`\\b[^\\s]*${needle}[^\\s]*\\b`, 'i');
+    return pattern.test(rootNameTextFor(el));
   };
 
   const escapeCss = (value) => {
@@ -66,11 +74,15 @@ function runCarouselDetector(overrides = {}) {
     height: window.innerHeight || document.documentElement.clientHeight || 0,
   });
 
-  const hasCarouselName = (el) => /(\bcarousel\b(?!-item|-image|-caption|-control|-tab)|\bcarousel-tablist\b|\bslider\b|\bslideshow\b|\bslide-show\b|\brotator\b|\bswiper\b(?!-slide)|\bsplide\b(?!__slide)|\bglide\b(?!__slide)|\bslick\b(?!-slide)|\bflickity\b(?!-cell)|\bembla\b(?!__slide)|\bkeen-slider\b(?!__slide)|\bowl-carousel\b|\bbxslider\b|\borbit\b)/i.test(rootNameTextFor(el));
+  const hasCarouselName = (el) => hasTokenContaining(el, 'carousel') || /(\bslider\b|\bslideshow\b|\bslide-show\b|\brotator\b|\bswiper\b(?!-slide)|\bsplide\b(?!__slide)|\bglide\b(?!__slide)|\bslick\b(?!-slide)|\bflickity\b(?!-cell)|\bembla\b(?!__slide)|\bkeen-slider\b(?!__slide)|\bbxslider\b|\borbit\b)/i.test(rootNameTextFor(el));
 
   const hasExcludedName = (el) => /accordion|faq|menu|menubar|tree|treeview|toolbar|breadcrumb|tabs(?!.*carousel)|tablist(?!.*carousel)|feed|timeline|stream|results|table|grid|calendar/i.test(classTextFor(el));
 
-  const hasTrackName = (el) => /items|slides|track|viewport|wrapper|inner|list|stage|rail|strip|container|swiper-wrapper|splide__list|glide__slides|embla__container|keen-slider/i.test(classTextFor(el));
+  const hasStrongTrackName = (el) => /slides|track|viewport|stage|rail|strip|swiper-wrapper|splide__list|glide__slides|embla__container|keen-slider|flickity-slider|slick-track|owl-stage/i.test(classTextFor(el));
+
+  const hasWeakTrackName = (el) => /items|wrapper|inner|list|container/i.test(classTextFor(el));
+
+  const hasTrackName = (el) => hasStrongTrackName(el) || hasWeakTrackName(el);
 
   const hasSlideName = (el) => /(carousel-item|swiper-slide|splide__slide|glide__slide|slick-slide|flickity-cell|embla__slide|keen-slider__slide|owl-item|\bslide-item\b|\bslide-panel\b|\bslide-card\b|\bslide\b(?!s))/i.test(classTextFor(el));
 
@@ -269,7 +281,7 @@ function runCarouselDetector(overrides = {}) {
     const candidates = [container];
     const namedDescendants = [...container.querySelectorAll('*')]
       .filter((el) => !config.ignoredTags.has(el.tagName))
-      .filter((el) => hasTrackName(el) || hasCarouselName(el))
+      .filter((el) => hasStrongTrackName(el) || hasCarouselName(el) || (hasWeakTrackName(el) && hasCarouselName(el.parentElement)))
       .slice(0, 18);
 
     namedDescendants.forEach((el) => candidates.push(el));
@@ -319,6 +331,7 @@ function runCarouselDetector(overrides = {}) {
     const hasTransformMotion = groupStyle.transform !== 'none' || slides.some((slide) => window.getComputedStyle(slide).transform !== 'none');
     const overflowStyle = `${groupStyle.overflow} ${groupStyle.overflowX} ${groupStyle.overflowY}`;
     const clipsOverflow = /hidden|clip|scroll|auto/.test(overflowStyle);
+    const carouselScopedGroup = hasCarouselName(group) || hasCarouselName(outerContainer);
     const widthUniformity = getUniformityRatio(widths, 24);
     const heightUniformity = getUniformityRatio(heights, 24);
     const oneVisibleManyHidden = visibleSlides.length <= 2 && hiddenSlides.length >= Math.max(1, slides.length - 1);
@@ -334,7 +347,7 @@ function runCarouselDetector(overrides = {}) {
       score += 24;
       reasons.push('carousel-like-container-name');
     }
-    if (hasCarouselName(group) || hasTrackName(group)) {
+    if (hasCarouselName(group) || hasStrongTrackName(group) || (carouselScopedGroup && hasWeakTrackName(group))) {
       score += 18;
       reasons.push('carousel-track-or-items-wrapper');
     }
@@ -394,6 +407,10 @@ function runCarouselDetector(overrides = {}) {
     if (group.matches('ul, ol') && mediaRatio === 0 && activeCount === 0 && hiddenSlides.length === 0) {
       score -= 20;
       reasons.push('plain-list-pattern');
+    }
+    if (!carouselScopedGroup && slides.length <= 3 && mediaRatio < 0.34 && activeCount === 0 && hiddenSlides.length === 0) {
+      score -= 20;
+      reasons.push('generic-static-card-group');
     }
 
     if (score < config.minScore - 18) {
@@ -605,7 +622,7 @@ function runCarouselDetector(overrides = {}) {
     if (container === document.body || container === document.documentElement) return null;
     if (['TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'TD', 'TH', 'FIELDSET', 'FORM', 'DL', 'DT', 'DD'].includes(container.tagName) && !hasCarouselName(container)) return null;
     if (/carousel-options|options-panel|settings-panel/i.test(classTextFor(container))) return null;
-    if (/footer|link-list|reference|parsys|cookie|consent/i.test(classTextFor(container)) && !hasCarouselName(container)) return null;
+    if (/footer|link-list|reference|parsys|cookie|consent|leftbar|sidebar|sticky/i.test(classTextFor(container)) && !hasCarouselName(container)) return null;
     if (hasExcludedName(container) && !hasCarouselName(container)) return null;
     if (container.matches('[role="menu"], [role="tree"], [role="tablist"]') && !hasCarouselName(container)) return null;
     if (isExplicitSlideElement(container) && !hasCarouselName(container) && !hasTrackName(container)) return null;
@@ -686,6 +703,10 @@ function runCarouselDetector(overrides = {}) {
     if (insideNav && !hasCarouselName(container)) {
       score -= 24;
       reasons.push('inside-navigation-region');
+    }
+    if (/leftbar|sidebar|sticky/i.test(classTextFor(container)) && !hasCarouselName(container)) {
+      score -= 28;
+      reasons.push('sidebar-region');
     }
     if (insideFooter && !hasCarouselName(container)) {
       score -= 20;
