@@ -207,7 +207,9 @@ function runFeedDetector(overrides = {}) {
     const itemNestedSections = items.map((item) => item.querySelectorAll('section, article, [role="region"]').length);
     const avgNestedSectionCount = average(itemNestedSections);
     const directChildren = getDirectElementChildren(container);
+    const itemCoverageRatio = items.length / Math.max(1, directChildren.length);
     const hasDirectStructuralChrome = directChildren.some((child) => child.matches('header, nav, [role="navigation"], [role="menu"], [role="menubar"], [role="tablist"]'));
+    const hasNamedStructuralChrome = directChildren.some((child) => /header|footer|nav|hero|banner|masthead|topbar|menubar/i.test(classTextFor(child)));
     const oversizedCompositeItems = avgHeight >= Math.max(900, Math.round(viewportSize().height * 0.7)) || avgTextLength >= 420;
     const sectionLikeItems = avgHeadingCount > 2.5 || avgNestedSectionCount > 1.5;
     const weakFeedSignals = !roleFeed && !nameSignal && !labelSignal && !scrollable && !busySignal;
@@ -215,7 +217,9 @@ function runFeedDetector(overrides = {}) {
     if (orientation === 'horizontal') return null;
     if (avgTextLength < 40 && articles < 2) return null;
     if (linkClusters >= Math.ceil(items.length * 0.6)) return null;
-    if (hasDirectStructuralChrome && weakFeedSignals) return null;
+    if ((hasDirectStructuralChrome || hasNamedStructuralChrome) && weakFeedSignals) return null;
+    if (weakFeedSignals && itemRoot === container && itemCoverageRatio < 0.75) return null;
+    if (weakFeedSignals && itemRoot === container && items.length <= 5 && oversizedCompositeItems) return null;
     if (weakFeedSignals && articles < 2 && oversizedCompositeItems && sectionLikeItems) return null;
 
     let score = 0;

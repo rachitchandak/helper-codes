@@ -1,0 +1,14 @@
+{
+  "name": "widget-detector-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Run DOM widget detectors against a URL and generate a visual report.",
+  "scripts": {
+    "analyze": "node src/analyze.js",
+    "analyze:source-map": "node src/analyze-source-map.js"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

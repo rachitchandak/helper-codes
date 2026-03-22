@@ -89,6 +89,42 @@ const SKIP_HTML_TAGS = new Set([
  * produce no DOM node.
  */
 const SKIP_JSX_NAMES = new Set(["Fragment"]);
+const INTRINSIC_ELEMENT_NAMES = new Set([
+    "a", "abbr", "address", "animate", "animateMotion", "animateTransform",
+    "area", "article", "aside", "audio", "b", "base", "bdi", "bdo",
+    "blockquote", "body", "br", "button", "canvas", "caption", "circle",
+    "cite", "clipPath", "code", "col", "colgroup", "data", "datalist",
+    "dd", "defs", "del", "desc", "details", "dfn", "dialog", "div",
+    "dl", "dt", "ellipse", "em", "embed", "feBlend", "feColorMatrix",
+    "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting",
+    "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood",
+    "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur",
+    "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
+    "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
+    "feTurbulence", "fieldset", "figcaption", "figure", "filter", "footer",
+    "foreignObject", "form", "g", "h1", "h2", "h3", "h4", "h5", "h6",
+    "head", "header", "hgroup", "hr", "html", "i", "iframe", "image",
+    "img", "input", "ins", "kbd", "label", "legend", "li", "line",
+    "linearGradient", "main", "map", "mark", "marker", "mask", "menu",
+    "menuitem", "meta", "meter", "nav", "noscript", "object", "ol",
+    "optgroup", "option", "output", "p", "param", "path", "pattern",
+    "picture", "polygon", "polyline", "portal", "pre", "progress",
+    "q", "radialGradient", "rect", "rp", "rt", "ruby", "s", "samp",
+    "script", "section", "select", "small", "source", "span", "stop",
+    "strong", "style", "sub", "summary", "sup", "svg", "symbol", "table",
+    "tbody", "td", "template", "text", "textPath", "textarea", "tfoot",
+    "th", "thead", "time", "title", "tr", "track", "tspan", "u", "ul",
+    "use", "var", "video", "view", "wbr"
+]);
+function isIntrinsicJsxElementName(name) {
+    if (t.isJSXIdentifier(name)) {
+        if (name.name.includes("-")) {
+            return true;
+        }
+        return INTRINSIC_ELEMENT_NAMES.has(name.name);
+    }
+    return false;
+}
 // --------------------------------------------------------------------------
 // Public API
 // --------------------------------------------------------------------------
@@ -181,6 +217,8 @@ async function instrumentJSXFile(filePath) {
                     return;
                 }
             }
+            if (!isIntrinsicJsxElementName(node.name))
+                return;
             // ------------------------------------------------------------------
             // Skip if the element already has the attribute (idempotent runs).
             // ------------------------------------------------------------------

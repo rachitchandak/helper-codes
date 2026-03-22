@@ -994,7 +994,11 @@ function runAccordionDetector(overrides = {}) {
     if (section.trigger.tagName === 'SUMMARY' && section.trigger.parentElement?.tagName === 'DETAILS') {
       return section.trigger.parentElement.hasAttribute('open') ? 'expanded' : 'collapsed';
     }
-    return getVisibilityInfo(section.panel).visible ? 'expanded' : 'collapsed';
+    const visibility = getVisibilityInfo(section.panel);
+    if (visibility.visible || visibility.reason === 'outside-viewport') {
+      return 'expanded';
+    }
+    return 'collapsed';
   };
 
   const inferType = (container, sections, hiddenPanelCount, detailsCount) => {
@@ -1101,6 +1105,14 @@ function runAccordionDetector(overrides = {}) {
     const nextSiblingPairCount = sections.filter((section) => section.wrapper.nextElementSibling === section.panel || section.trigger.parentElement?.nextElementSibling === section.panel).length;
     const ariaPairCount = sections.filter((section) => section.trigger.hasAttribute('aria-controls') || section.panel.getAttribute('aria-labelledby')).length;
     const detailsCount = sections.filter((section) => section.pattern === 'details').length;
+    const explicitTriggerCount = sections.filter((section) => {
+      const trigger = section.trigger;
+      return trigger.tagName === 'BUTTON'
+        || trigger.tagName === 'SUMMARY'
+        || trigger.hasAttribute('aria-expanded')
+        || trigger.hasAttribute('aria-controls')
+        || isStructurallyInteractive(trigger);
+    }).length;
     const reusedTriggerRowPanels = sections.filter((section) => sections.some((other) => other !== section && (other.wrapper === section.panel || other.trigger === section.panel))).length;
     const panelContentCount = panels.filter((panel) => {
       return panel.querySelector(panelContentSelector) || normalizeText(panel).length >= 24;
@@ -1161,6 +1173,10 @@ function runAccordionDetector(overrides = {}) {
     }
 
     if (codeLikePanelRatio >= 0.3 && !hasAccordionName(container) && detailsCount === 0) {
+      return null;
+    }
+
+    if (explicitTriggerCount === 0 && ariaPairCount === 0 && detailsCount === 0 && !hasAccordionName(container)) {
       return null;
     }
 
