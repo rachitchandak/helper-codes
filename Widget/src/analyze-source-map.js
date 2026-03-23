@@ -1,20 +1,15 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { buildReportHtml } from './report-template.js';
+import { BackupManager } from './dom-source-map/fs-manager.js';
+import { instrumentAllFiles } from './dom-source-map/instrumenter.js';
+import { ServerRunner } from './dom-source-map/server-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
-const workspaceRoot = path.resolve(rootDir, '..');
-const domSourceMapRoot = path.join(workspaceRoot, 'DOM_SOURCE_MAP');
-
-const require = createRequire(import.meta.url);
-const { BackupManager } = require(path.join(domSourceMapRoot, 'dist', 'fs-manager.js'));
-const { instrumentAllFiles } = require(path.join(domSourceMapRoot, 'dist', 'instrumenter.js'));
-const { ServerRunner } = require(path.join(domSourceMapRoot, 'dist', 'server-runner.js'));
 
 const detectorRegistry = [
   { kind: 'accordion', file: 'accordion-detector.js', runName: 'runAccordionDetector' },

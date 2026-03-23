@@ -25,7 +25,7 @@ npm run analyze -- https://example.com --out=reports/custom-run
 
 ## Source-Mapped Usage
 
-This mode combines the Widget detector pass with the DOM_SOURCE_MAP instrumentation flow. It temporarily injects `data-source-loc` attributes into `.jsx`, `.tsx`, and `.html` files, starts your app, runs the widget/component scan, and writes source-aware results into the report.
+This mode combines the Widget detector pass with the built-in source-mapping instrumentation flow. It temporarily injects `data-source-loc` attributes into `.js`, `.jsx`, `.tsx`, and `.html` files, starts your app, runs the widget/component scan, and writes source-aware results into the report.
 
 ```bash
 npm run analyze:source-map -- --source-dir=../your-app/src --project-dir=../your-app --start-command="npm run dev" --url=http://localhost:3000
@@ -42,10 +42,10 @@ npm run analyze:source-map -- --source-dir=../your-app/src --url=http://localhos
 
 Notes for source mapping:
 
-- `--source-dir` is the directory DOM_SOURCE_MAP instruments and later restores.
+- `--source-dir` is the directory Widget instruments and later restores.
 - `--project-dir` is the directory where `--start-command` runs. Use the app root, not the `src` folder.
 - The report adds `sourceMapping` for widgets, components, and uncovered nodes when a `data-source-loc` match is found.
-- Coverage is limited to files DOM_SOURCE_MAP can instrument today: `.jsx`, `.tsx`, and `.html`.
+- Coverage is limited to files Widget can instrument today: `.js`, `.jsx`, `.tsx`, and `.html`.
 
 ## Output
 
